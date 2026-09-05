@@ -28,12 +28,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import {
-  TIME_OPTIONS,
-  formatTime,
-  formatDate,
-  type Room,
-} from '@/lib/campus';
+import { TIME_OPTIONS, formatTime, formatDate, type Room } from '@/lib/campus';
 import {
   useUserBookings,
   evaluateBookingPermission,
@@ -83,7 +78,9 @@ export function BookingDialog({
   const [endTime, setEndTime] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [createdBooking, setCreatedBooking] = useState<UserBooking | null>(null);
+  const [createdBooking, setCreatedBooking] = useState<UserBooking | null>(
+    null,
+  );
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   if (!room) return null;
@@ -150,7 +147,9 @@ export function BookingDialog({
     e.preventDefault();
     if (!room) return;
     if (startTime === null || endTime === null) {
-      setErrorMsg('Пожалуйста, выберите время начала и окончания бронирования.');
+      setErrorMsg(
+        'Пожалуйста, выберите время начала и окончания бронирования.',
+      );
       return;
     }
     setErrorMsg(null);
@@ -216,17 +215,17 @@ export function BookingDialog({
             <div className="confirmation-icon mx-auto">
               <Check size={32} />
             </div>
-            <DialogTitle className="confirmation-title text-2xl font-bold text-[#2a2d3c]">
+            <DialogTitle className="confirmation-title text-2xl font-bold text-foreground">
               Коворкинг забронирован!
             </DialogTitle>
-            <DialogDescription className="confirmation-description text-[#6c647e] text-base">
+            <DialogDescription className="confirmation-description text-muted-foreground text-base">
               Ждём вас в коворкинге{' '}
-              <strong className="text-[#2a2d3c]">К{room.number}</strong> (
+              <strong className="text-foreground">К{room.number}</strong> (
               {room.floor} этаж)
             </DialogDescription>
 
-            <div className="w-full bg-[#f8f6fc] border border-[#e8e2f4] rounded-xl p-4 text-left flex flex-col gap-2.5 text-sm">
-              <div className="flex justify-between items-center text-[#7560da] font-medium border-b border-[#ebdff8] pb-2">
+            <div className="w-full bg-[#f8f6fc] border border-border rounded-xl p-4 text-left flex flex-col gap-2.5 text-sm">
+              <div className="flex justify-between items-center text-urfu-blue font-medium border-b border-border pb-2">
                 <span className="flex items-center gap-1.5">
                   <Calendar size={15} />
                   {formatDate(createdBooking.date)}
@@ -237,12 +236,16 @@ export function BookingDialog({
                   {formatTime(createdBooking.endTime)}
                 </span>
               </div>
-              <div className="text-[#514a66]">
-                <span className="text-[#8e879f] text-xs block">Имя:</span>
+              <div className="text-muted-foreground">
+                <span className="text-muted-foreground text-xs block">
+                  Имя:
+                </span>
                 <span className="font-medium">{createdBooking.userName}</span>
               </div>
-              <div className="text-[#514a66]">
-                <span className="text-[#8e879f] text-xs block">Цель:</span>
+              <div className="text-muted-foreground">
+                <span className="text-muted-foreground text-xs block">
+                  Цель:
+                </span>
                 <span className="font-medium">{createdBooking.purpose}</span>
               </div>
             </div>
@@ -267,37 +270,49 @@ export function BookingDialog({
           </div>
         ) : isThisRoomBookedByMe ? (
           /* Already Booked by Current User: Room Cancellation State */
-          <div id="booking-active-room-view" className="flex flex-col gap-4 py-1">
-            <div className="flex items-center gap-3 border-b border-[#ece7f6] pb-4">
+          <div
+            id="booking-active-room-view"
+            className="flex flex-col gap-4 py-1"
+          >
+            <div className="flex items-center gap-3 border-b border-border pb-4">
               <div className="w-12 h-12 rounded-xl bg-[#eaf7ee] text-[#278557] flex items-center justify-center shrink-0">
                 <DoorOpen size={24} />
               </div>
               <div>
-                <DialogTitle id="booking-active-dialog-title" className="text-xl font-bold text-[#2a2d3c] m-0">
+                <DialogTitle
+                  id="booking-active-dialog-title"
+                  className="text-xl font-bold text-foreground m-0"
+                >
                   Ваша активная бронь
                 </DialogTitle>
-                <DialogDescription id="booking-active-dialog-desc" className="text-sm text-[#777c8e] m-0">
+                <DialogDescription
+                  id="booking-active-dialog-desc"
+                  className="text-sm text-muted-foreground m-0"
+                >
                   Коворкинг К{room.number} · {room.floor} этаж · {room.kind}
                 </DialogDescription>
               </div>
             </div>
 
-            <div id="booking-active-details-card" className="bg-[#f7f8fb] border border-[#e4e7f0] rounded-xl p-4 flex flex-col gap-3 text-sm">
-              <div className="flex justify-between items-center pb-2 border-b border-[#e7e9f2]">
-                <span className="text-[#777c8e] flex items-center gap-1.5">
+            <div
+              id="booking-active-details-card"
+              className="bg-muted border border-border rounded-xl p-4 flex flex-col gap-3 text-sm"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-border">
+                <span className="text-muted-foreground flex items-center gap-1.5">
                   <Calendar size={15} />
                   Дата
                 </span>
-                <strong className="text-[#2a2d3c]">
+                <strong className="text-foreground">
                   {formatDate(activeBooking.date)}
                 </strong>
               </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#e7e9f2]">
-                <span className="text-[#777c8e] flex items-center gap-1.5">
+              <div className="flex justify-between items-center pb-2 border-b border-border">
+                <span className="text-muted-foreground flex items-center gap-1.5">
                   <Clock size={15} />
                   Время
                 </span>
-                <strong className="text-[#7560da]">
+                <strong className="text-urfu-blue">
                   {formatTime(activeBooking.startTime)} —{' '}
                   {formatTime(activeBooking.endTime)} (
                   {formatBookingDuration(
@@ -307,25 +322,28 @@ export function BookingDialog({
                   )
                 </strong>
               </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#e7e9f2]">
-                <span className="text-[#777c8e] flex items-center gap-1.5">
+              <div className="flex justify-between items-center pb-2 border-b border-border">
+                <span className="text-muted-foreground flex items-center gap-1.5">
                   <User size={15} />
                   Имя
                 </span>
-                <strong className="text-[#2a2d3c]">
+                <strong className="text-foreground">
                   {activeBooking.userName}
                 </strong>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#777c8e]">Цель</span>
-                <strong className="text-[#2a2d3c] text-right max-w-[240px] truncate">
+                <span className="text-muted-foreground">Цель</span>
+                <strong className="text-foreground text-right max-w-[240px] truncate">
                   {activeBooking.purpose}
                 </strong>
               </div>
             </div>
 
             {confirmCancel ? (
-              <div id="booking-cancel-confirm-box" className="bg-[#fdeef0] border border-[#f5ccd2] rounded-xl p-4 flex flex-col gap-3">
+              <div
+                id="booking-cancel-confirm-box"
+                className="bg-[#fdeef0] border border-[#f5ccd2] rounded-xl p-4 flex flex-col gap-3"
+              >
                 <div className="flex items-center gap-2 text-[#b94a57] font-semibold text-sm">
                   <AlertCircle size={17} />
                   Подтвердите отмену бронирования
@@ -387,16 +405,25 @@ export function BookingDialog({
               <AlertCircle size={26} />
             </div>
             <div>
-              <DialogTitle id="booking-conflict-title" className="text-xl font-bold text-[#2a2d3c] mb-1">
+              <DialogTitle
+                id="booking-conflict-title"
+                className="text-xl font-bold text-foreground mb-1"
+              >
                 У вас уже есть бронирование
               </DialogTitle>
-              <DialogDescription id="booking-conflict-desc" className="text-sm text-[#777c8e]">
+              <DialogDescription
+                id="booking-conflict-desc"
+                className="text-sm text-muted-foreground"
+              >
                 По правилам кампуса разрешено иметь только одну активную бронь
                 одновременно.
               </DialogDescription>
             </div>
 
-            <div id="booking-conflict-details-card" className="bg-[#fff9ea] border border-[#f5e3b5] rounded-xl p-4 text-sm flex flex-col gap-2 text-[#795411]">
+            <div
+              id="booking-conflict-details-card"
+              className="bg-[#fff9ea] border border-[#f5e3b5] rounded-xl p-4 text-sm flex flex-col gap-2 text-[#795411]"
+            >
               <div className="font-semibold flex items-center gap-1.5">
                 <DoorOpen size={16} />
                 Текущая бронь: Коворкинг К{activeBooking.roomNumber} (
@@ -412,10 +439,10 @@ export function BookingDialog({
               </div>
             </div>
 
-            <div className="text-xs text-[#7d798a] leading-relaxed">
+            <div className="text-xs text-muted-foreground leading-relaxed">
               Чтобы забронировать коворкинг{' '}
-              <strong className="text-[#2a2d3c]">К{room.number}</strong>, сначала
-              отмените текущую бронь.
+              <strong className="text-foreground">К{room.number}</strong>,
+              сначала отмените текущую бронь.
             </div>
 
             <div className="flex flex-col gap-2 pt-2">
@@ -454,10 +481,16 @@ export function BookingDialog({
                 <ShieldAlert size={25} />
               </div>
               <div>
-                <DialogTitle id="booking-blocked-title" className="text-xl font-bold text-[#2a2d3c] m-0">
+                <DialogTitle
+                  id="booking-blocked-title"
+                  className="text-xl font-bold text-foreground m-0"
+                >
                   Бронирование временно недоступно
                 </DialogTitle>
-                <DialogDescription id="booking-blocked-desc" className="text-sm text-[#777c8e] m-0">
+                <DialogDescription
+                  id="booking-blocked-desc"
+                  className="text-sm text-muted-foreground m-0"
+                >
                   Рейтинг ученика достиг критического значения.
                 </DialogDescription>
               </div>
@@ -474,9 +507,9 @@ export function BookingDialog({
               </div>
             </div>
 
-            <p className="text-xs text-[#777c8e] leading-relaxed m-0">
-              За завершённую бронь начисляется +1 балл, за отмену списывается −2.
-              При рейтинге −3 и ниже бронирование блокируется на 7 дней.
+            <p className="text-xs text-muted-foreground leading-relaxed m-0">
+              За завершённую бронь начисляется +1 балл, за отмену списывается
+              −2. При рейтинге −3 и ниже бронирование блокируется на 7 дней.
             </p>
 
             <button
@@ -491,22 +524,26 @@ export function BookingDialog({
           </div>
         ) : (
           /* Normal Booking Form */
-          <form id="new-booking-form" onSubmit={handleBookingSubmit} className="flex flex-col gap-4">
+          <form
+            id="new-booking-form"
+            onSubmit={handleBookingSubmit}
+            className="flex flex-col gap-4"
+          >
             {/* Header info */}
-            <div className="border-b border-[#ece7f6] pb-3">
+            <div className="border-b border-border pb-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#7560da]">
+                <span className="text-xs font-semibold uppercase tracking-wider text-urfu-blue">
                   Бронирование пространства
                 </span>
-                <span className="text-xs font-medium text-[#777c8e] flex items-center gap-1">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   <Users size={13} />
                   до {room.capacity} человек
                 </span>
               </div>
-              <DialogTitle className="text-2xl font-bold text-[#2a2d3c] mt-1 mb-0.5">
+              <DialogTitle className="text-2xl font-bold text-foreground mt-1 mb-0.5">
                 Коворкинг К{room.number}
               </DialogTitle>
-              <DialogDescription className="text-sm text-[#777c8e]">
+              <DialogDescription className="text-sm text-muted-foreground">
                 {room.floor} этаж · {room.kind}
               </DialogDescription>
             </div>
@@ -521,18 +558,20 @@ export function BookingDialog({
             {/* Date & Time fields */}
             <div className="flex flex-col gap-3">
               <div>
-                <span className="block text-xs font-medium text-[#6c647e] mb-1.5">
+                <span className="block text-xs font-medium text-muted-foreground mb-1.5">
                   Дата посещения
                 </span>
-                <div className="flex items-center gap-2.5 h-10 px-3 rounded-lg border border-input bg-[#fbfbfe] text-sm text-[#2a2d3c]">
-                  <Calendar size={16} className="text-[#8e879f]" />
-                  <span className="font-medium">{formatDate(selectedDate)}</span>
+                <div className="flex items-center gap-2.5 h-10 px-3 rounded-lg border border-input bg-muted text-sm text-foreground">
+                  <Calendar size={16} className="text-muted-foreground" />
+                  <span className="font-medium">
+                    {formatDate(selectedDate)}
+                  </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="block text-xs font-medium text-[#6c647e] mb-1.5">
+                  <span className="block text-xs font-medium text-muted-foreground mb-1.5">
                     Начало
                   </span>
                   <Select
@@ -541,15 +580,16 @@ export function BookingDialog({
                       if (val) handleStartTimeChange(val);
                     }}
                   >
-                    <SelectTrigger id="booking-start-time-select" className="w-full h-10 bg-card">
+                    <SelectTrigger
+                      id="booking-start-time-select"
+                      className="w-full h-10 bg-card"
+                    >
                       <SelectValue placeholder="—:—">
                         {startTime !== null ? formatTime(startTime) : '—:—'}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="empty">
-                        —:—
-                      </SelectItem>
+                      <SelectItem value="empty">—:—</SelectItem>
                       {TIME_OPTIONS.map((val) => (
                         <SelectItem key={val} value={String(val)}>
                           {formatTime(val)}
@@ -560,7 +600,7 @@ export function BookingDialog({
                 </div>
 
                 <div>
-                  <span className="block text-xs font-medium text-[#6c647e] mb-1.5">
+                  <span className="block text-xs font-medium text-muted-foreground mb-1.5">
                     Окончание
                   </span>
                   <Select
@@ -570,15 +610,16 @@ export function BookingDialog({
                     }}
                     disabled={startTime === null}
                   >
-                    <SelectTrigger id="booking-end-time-select" className="w-full h-10 bg-card">
+                    <SelectTrigger
+                      id="booking-end-time-select"
+                      className="w-full h-10 bg-card"
+                    >
                       <SelectValue placeholder="—:—">
                         {endTime !== null ? formatTime(endTime) : '—:—'}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="empty">
-                        —:—
-                      </SelectItem>
+                      <SelectItem value="empty">—:—</SelectItem>
                       {availableEndTimes.map((val) => (
                         <SelectItem key={val} value={String(val)}>
                           {formatTime(val)}
@@ -591,18 +632,28 @@ export function BookingDialog({
 
               {/* Duration and helper info */}
               {startTime !== null && endTime !== null && endTime > startTime ? (
-                <div id="booking-duration-hint" className="text-xs text-[#7560da] font-medium flex items-center justify-between -mt-1 px-1">
+                <div
+                  id="booking-duration-hint"
+                  className="text-xs text-urfu-blue font-medium flex items-center justify-between -mt-1 px-1"
+                >
                   <span className="flex items-center gap-1.5">
                     <Clock size={13} />
                     <span>
                       Длительность:{' '}
-                      <strong>{formatBookingDuration(startTime, endTime)}</strong>
+                      <strong>
+                        {formatBookingDuration(startTime, endTime)}
+                      </strong>
                     </span>
                   </span>
-                  <span className="text-[#8e879f] text-[11px]">от 30 мин до 4 ч</span>
+                  <span className="text-muted-foreground text-[11px]">
+                    от 30 мин до 4 ч
+                  </span>
                 </div>
               ) : (
-                <p id="booking-time-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1">
+                <p
+                  id="booking-time-hint"
+                  className="text-[11px] text-muted-foreground -mt-1 px-1"
+                >
                   {startTime === null
                     ? 'Сначала выберите время начала.'
                     : 'Выберите время окончания (от 30 мин до 4 часов).'}
@@ -614,7 +665,7 @@ export function BookingDialog({
             <div>
               <label
                 htmlFor="booking-user-name"
-                className="block text-xs font-medium text-[#6c647e] mb-1.5"
+                className="block text-xs font-medium text-muted-foreground mb-1.5"
               >
                 Ваше имя и фамилия <span className="text-[#cf414d]">*</span>
               </label>
@@ -631,7 +682,7 @@ export function BookingDialog({
 
             {/* Purpose input */}
             <div>
-              <span className="block text-xs font-medium text-[#6c647e] mb-1.5">
+              <span className="block text-xs font-medium text-muted-foreground mb-1.5">
                 Цель бронирования <span className="text-[#cf414d]">*</span>
               </span>
               <Select
@@ -640,7 +691,10 @@ export function BookingDialog({
                   if (val) handlePurposeChange(val);
                 }}
               >
-                <SelectTrigger id="booking-purpose-select" className="w-full h-10 bg-card mb-2">
+                <SelectTrigger
+                  id="booking-purpose-select"
+                  className="w-full h-10 bg-card mb-2"
+                >
                   <SelectValue placeholder="Выберите цель посещения">
                     {purpose || 'Выберите цель посещения'}
                   </SelectValue>
@@ -669,8 +723,11 @@ export function BookingDialog({
             </div>
 
             {/* Policy note */}
-            <div id="booking-rules-note" className="bg-[#f7f5fd] border border-[#e8e2f6] rounded-lg p-2.5 text-xs text-[#756a92] flex items-center gap-2">
-              <Info size={15} className="shrink-0 text-[#7560da]" />
+            <div
+              id="booking-rules-note"
+              className="bg-accent border border-border rounded-lg p-2.5 text-xs text-muted-foreground flex items-center gap-2"
+            >
+              <Info size={15} className="shrink-0 text-urfu-blue" />
               <span>
                 {profile.role === 'student'
                   ? `Рейтинг: ${formatRating(profile.rating)}. Завершение +1, одна отмена в месяц бесплатна, отмена более чем за 2 часа без штрафа. Один аккаунт = один активный коворкинг.`
@@ -685,7 +742,8 @@ export function BookingDialog({
               className="choose-button mt-1 cursor-pointer"
               disabled={
                 !userName.trim() ||
-                (!purpose || (purpose === 'Другая цель' && !customPurpose.trim())) ||
+                !purpose ||
+                (purpose === 'Другая цель' && !customPurpose.trim()) ||
                 startTime === null ||
                 endTime === null ||
                 endTime - startTime < 30 ||

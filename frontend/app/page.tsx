@@ -1,22 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import type { CSSProperties } from 'react';
-import Link from 'next/link';
 import {
   ArrowDown,
   ArrowRight,
-  ArrowUpRight,
-  Bookmark,
-  Building2,
   CalendarDays,
-  Check,
   CheckCheck,
   CheckCircle2,
   ChevronRight,
   Clock3,
   DoorOpen,
-  GraduationCap,
   Info,
   Layers3,
   LayoutGrid,
@@ -24,8 +17,6 @@ import {
   MapPin,
   Monitor,
   Plug,
-  ShieldAlert,
-  Star,
   Trash2,
   Users,
   Volume2,
@@ -55,14 +46,11 @@ import {
 } from '@/lib/campus';
 import { useUserBookings, evaluateBookingPermission } from '@/lib/bookings';
 import { BookingDialog } from '@/components/booking-dialog';
+import { Button } from '@/components/ui/button';
+import { SiteShell } from '@/components/site-shell';
+import { RoomCard } from '@/components/room-card';
+import { RatingPolicy } from '@/components/rating-policy';
 import { MyBookingsDialog } from '@/components/my-bookings-dialog';
-import {
-  formatRating,
-  getFreeCancellationsLeft,
-  getStoredProfile,
-  isStudentBlocked,
-  useUserProfile,
-} from '@/lib/account';
 
 export default function Home() {
   const [floor, setFloor] = useState(1);
@@ -80,10 +68,6 @@ export default function Home() {
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
 
-  const { setRole } = useUserProfile();
-  const profile = getStoredProfile();
-  const isRatingBlocked = isStudentBlocked(profile);
-  const freeCancellationsLeft = getFreeCancellationsLeft(profile);
   const { activeBooking, cancel, refresh } = useUserBookings(date, time);
   const selected = ROOMS.find((room) => room.id === selectedId)!;
   const state = getRoomState(selected, date, time);
@@ -104,15 +88,12 @@ export default function Home() {
   function selectRoom(id: number) {
     setSelectedId(id);
     if (window.matchMedia('(max-width: 970px)').matches) {
-      document
-        .getElementById('room-details')
-        ?.scrollIntoView({
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
-            .matches
-            ? 'instant'
-            : 'smooth',
-          block: 'start',
-        });
+      document.getElementById('room-details')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+        block: 'start',
+      });
     }
   }
 
@@ -130,142 +111,25 @@ export default function Home() {
 
   function renderRoom(room: Room, index: number) {
     const availability = getRoomState(room, date, time);
-    const dimmed = onlyFree && availability.status !== 'free';
-    const isBookedByMe = activeBooking?.roomId === room.id;
-
     return (
-      <button
-        id={`room-card-${room.id}`}
-        type="button"
+      <RoomCard
         key={room.id}
-        className={
-          'room room-' +
-          availability.status +
-          (room.id === selectedId ? ' room-selected' : '') +
-          (dimmed ? ' room-dimmed' : '') +
-          (isBookedByMe ? ' ring-2 ring-[#7560da] ring-offset-2' : '')
-        }
-        onClick={() => selectRoom(room.id)}
-        disabled={dimmed}
-        aria-pressed={room.id === selectedId}
-        aria-label={
-          'Коворкинг ' +
-          room.number +
-          ', ' +
-          availability.label +
-          ', ' +
-          room.capacity +
-          ' мест' +
-          (isBookedByMe ? ', забронировано вами' : '')
-        }
-        style={{ '--room-delay': index * 35 + 'ms' } as CSSProperties}
-      >
-        <span className="room-top">
-          <span className="room-code">К{room.number}</span>
-          {isBookedByMe ? (
-            <span
-              id={`room-user-badge-${room.id}`}
-              className="px-1.5 py-0.5 rounded bg-[#7560da] text-white text-[10px] font-bold flex items-center gap-0.5"
-              title="Ваша активная бронь"
-            >
-              <Bookmark size={11} />
-              Вы
-            </span>
-          ) : room.id === selectedId ? (
-            <span className="selected-mark">
-              <Check size={13} />
-            </span>
-          ) : (
-            <ArrowUpRight size={17} className="room-arrow" />
-          )}
-        </span>
-        <span className="room-type">{room.kind}</span>
-        <span className="room-capacity">
-          <Users size={14} />
-          {room.capacity} мест
-        </span>
-        <span className="room-bottom">
-          <span className="status-dot" />
-          {isBookedByMe ? 'Ваша бронь' : availability.shortLabel}
-        </span>
-      </button>
+        room={room}
+        index={index}
+        availability={availability}
+        selected={room.id === selectedId}
+        dimmed={onlyFree && availability.status !== 'free'}
+        isBookedByMe={activeBooking?.roomId === room.id}
+        onSelect={selectRoom}
+      />
     );
   }
 
   return (
-    <div id="site-root" className="site-shell">
-      <header id="site-topbar" className="topbar">
-        <Link id="brand-logo-link" href="/" className="brand" aria-label="Есть место — главная">
-          <span className="brand-icon">
-            <DoorOpen size={24} strokeWidth={2.4} />
-          </span>
-          <span>
-            есть место<span className="brand-dot">.</span>
-          </span>
-        </Link>
-        <div id="campus-location-info" className="header-location">
-          <Building2 size={17} />
-          <span>Университетский кампус</span>
-          <span className="header-separator" />
-          <span className="muted">3 этажа · 23 коворкинга</span>
-        </div>
-
-        <div className="ml-auto flex items-center gap-2.5">
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-[11px] text-[#858a9c]">Роль</span>
-            <Select
-              value={profile.role}
-              onValueChange={(value) => {
-                if (value === 'student' || value === 'teacher') setRole(value);
-              }}
-            >
-              <SelectTrigger
-                id="header-role-select"
-                className="h-8 min-w-[126px] border-[#dfd6f2] bg-[#fbf9fe] text-xs font-semibold text-[#7560da]"
-                aria-label="Роль пользователя"
-              >
-                <SelectValue>
-                  {profile.role === 'student' ? 'Ученик' : 'Преподаватель'}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="student">Ученик</SelectItem>
-                <SelectItem value="teacher">Преподаватель</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <button
-            id="header-my-bookings-button"
-            type="button"
-            className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#dfd6f2] bg-[#fbf9fe] text-[#7560da] hover:bg-[#f3edf9] transition-all cursor-pointer"
-            onClick={() => setMyBookingsOpen(true)}
-            aria-label="Мои бронирования"
-          >
-            <Bookmark size={15} />
-            <span>Мои бронирования</span>
-            {activeBooking ? (
-              <span
-                id="header-active-booking-pill"
-                className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#eaf7ee] text-[#278557] text-[11px] font-bold"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#278557]" />
-                К{activeBooking.roomNumber}
-              </span>
-            ) : (
-              <span
-                id="header-no-booking-counter"
-                className="text-[11px] px-1.5 py-0.2 rounded-full bg-[#ede9f9] text-[#7560da]"
-              >
-                0
-              </span>
-            )}
-          </button>
-          <span id="demo-pill-badge" className="demo-pill !ml-0">
-            <span />
-            Демо-версия
-          </span>
-        </div>
-      </header>
+    <SiteShell
+      onOpenBookings={() => setMyBookingsOpen(true)}
+      bookedRoomNumber={activeBooking?.roomNumber}
+    >
       <main id="workspace-main" className="workspace">
         <div id="campus-breadcrumb" className="breadcrumb">
           <span>Кампус</span>
@@ -274,113 +138,20 @@ export default function Home() {
         </div>
         <div id="page-heading-block" className="page-heading">
           <div>
-            <h1>Место для твоих идей</h1>
-            <p>Найди свободный коворкинг на нужном этаже.</p>
-          </div>
-          <div id="campus-stamp-block" className="campus-stamp">
-            <Layers3 size={21} />
-            <span>
-              Один кампус.
-              <br />
-              <strong>23 возможности.</strong>
-            </span>
+            <h1>Бронирование коворкингов</h1>
+            <p className="university-ribbon">
+              <span>Место для учёбы и совместной работы</span>
+            </p>
           </div>
         </div>
 
-        <section
-          id="rating-policy-card"
-          className={`mb-5 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-            isRatingBlocked
-              ? 'border-[#f5ccd2] bg-[#fff6f7]'
-              : 'border-[#e4def2] bg-[#fbf9fe]'
-          }`}
-          aria-label="Рейтинг и роль пользователя"
-        >
-          <div className="flex items-start gap-3">
-            <div
-              className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                isRatingBlocked
-                  ? 'bg-[#fdeef0] text-[#b94a57]'
-                  : 'bg-[#ede9fc] text-[#7560da]'
-              }`}
-            >
-              {isRatingBlocked ? (
-                <ShieldAlert size={20} />
-              ) : profile.role === 'student' ? (
-                <Star size={20} />
-              ) : (
-                <GraduationCap size={20} />
-              )}
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-[#7560da]">
-                {profile.role === 'student'
-                  ? 'Рейтинг ученика'
-                  : 'Профиль преподавателя'}
-              </div>
-              <div className="text-sm font-semibold text-[#2a2d3c] mt-0.5">
-                {isRatingBlocked
-                  ? `Бронирование заблокировано до ${formatDate(profile.blockedUntil!)}`
-                  : profile.role === 'student'
-                  ? 'Рейтинг влияет на доступ к бронированиям'
-                  : 'Рейтинг не начисляется и не ограничивает бронирование'}
-              </div>
-              <div className="text-xs text-[#858a9c] mt-1">
-                {profile.role === 'student'
-                  ? `+1 за завершённую бронь · ${freeCancellationsLeft > 0 ? '1 бесплатная отмена в месяц' : 'бесплатная отмена в этом месяце уже использована'} · отмена более чем за 2 часа без штрафа · блокировка при −3 на 7 дней`
-                  : 'Для преподавателей доступны те же комнаты без рейтинговых ограничений'}
-              </div>
-              <div className="text-xs text-[#858a9c] mt-1">
-                Ограничение бронирования: один аккаунт — один активный коворкинг · один коворкинг — один ответственный.
-              </div>
-              <div className="sm:hidden flex items-center gap-2 mt-3">
-                <span className="text-xs font-medium text-[#6c647e]">Роль:</span>
-                <Select
-                  value={profile.role}
-                  onValueChange={(value) => {
-                    if (value === 'student' || value === 'teacher') setRole(value);
-                  }}
-                >
-                  <SelectTrigger
-                    id="mobile-role-select"
-                    className="h-8 min-w-[140px] border-[#dfd6f2] bg-white text-xs font-semibold text-[#7560da]"
-                    aria-label="Роль пользователя"
-                  >
-                    <SelectValue>
-                      {profile.role === 'student' ? 'Ученик' : 'Преподаватель'}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Ученик</SelectItem>
-                    <SelectItem value="teacher">Преподаватель</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <div
-            className={`shrink-0 self-start sm:self-center rounded-xl px-4 py-2 text-center ${
-              isRatingBlocked
-                ? 'bg-[#fdeef0] text-[#b94a57]'
-                : 'bg-white border border-[#e7e1f2] text-[#7560da]'
-            }`}
-          >
-            <div className="text-[11px] uppercase tracking-wider font-semibold opacity-75">
-              {profile.role === 'student' ? 'Баланс' : 'Доступ'}
-            </div>
-            <div className="text-lg font-bold">
-              {profile.role === 'student'
-                ? `${formatRating(profile.rating)} баллов`
-                : 'Без ограничений'}
-            </div>
-          </div>
-        </section>
+        <RatingPolicy />
 
         {/* ACTIVE BOOKING BANNER */}
         {activeBooking && (
           <aside
             id="active-booking-banner"
-            className="mb-5 p-3.5 sm:p-4 rounded-xl border border-[#d8ccef] bg-[#fbf9fe] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+            className="mb-5 p-3.5 sm:p-4 rounded-xl border border-border bg-accent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
             aria-label="Текущее активное бронирование"
           >
             <div className="flex items-center gap-3">
@@ -388,11 +159,15 @@ export default function Home() {
                 <CheckCircle2 size={20} />
               </div>
               <div>
-                <div className="text-xs font-semibold text-[#7560da] uppercase tracking-wider">
+                <div className="text-xs font-semibold text-urfu-blue uppercase tracking-wider">
                   Ваша активная бронь
                 </div>
-                <div className="text-sm font-bold text-[#2a2d3c]">
-                  Коворкинг К{activeBooking.roomNumber} ({activeBooking.roomFloor} этаж) · {formatDate(activeBooking.date)} с {formatTime(activeBooking.startTime)} до {formatTime(activeBooking.endTime)}
+                <div className="text-sm font-bold text-foreground">
+                  Коворкинг К{activeBooking.roomNumber} (
+                  {activeBooking.roomFloor} этаж) ·{' '}
+                  {formatDate(activeBooking.date)} с{' '}
+                  {formatTime(activeBooking.startTime)} до{' '}
+                  {formatTime(activeBooking.endTime)}
                 </div>
               </div>
             </div>
@@ -400,7 +175,7 @@ export default function Home() {
               <button
                 id="banner-show-room-button"
                 type="button"
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#cfc3e8] bg-white text-[#2a2d3c] hover:bg-[#f6f2fd] transition-colors cursor-pointer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border bg-white text-foreground hover:bg-accent transition-colors cursor-pointer"
                 onClick={() => {
                   changeFloor(activeBooking.roomFloor);
                   selectRoom(activeBooking.roomId);
@@ -411,7 +186,7 @@ export default function Home() {
               <button
                 id="banner-manage-booking-button"
                 type="button"
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#7560da] text-white hover:bg-[#644fc9] transition-colors cursor-pointer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors cursor-pointer"
                 onClick={() => setMyBookingsOpen(true)}
               >
                 Управление бронью
@@ -596,7 +371,8 @@ export default function Home() {
                           )
                           .map((room) => {
                             const current = getRoomState(room, date, time);
-                            const isBookedByMe = activeBooking?.roomId === room.id;
+                            const isBookedByMe =
+                              activeBooking?.roomId === room.id;
                             return (
                               <button
                                 id={`list-room-${room.id}`}
@@ -607,7 +383,9 @@ export default function Home() {
                                   (room.id === selectedId
                                     ? 'list-room-selected '
                                     : '') +
-                                  (isBookedByMe ? 'border-[#7560da] bg-[#fbf9fe]' : '')
+                                  (isBookedByMe
+                                    ? 'border-border bg-accent'
+                                    : '')
                                 }
                                 onClick={() => selectRoom(room.id)}
                                 aria-pressed={room.id === selectedId}
@@ -625,7 +403,7 @@ export default function Home() {
                                     {isBookedByMe && (
                                       <span
                                         id={`list-room-badge-${room.id}`}
-                                        className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#7560da] text-white"
+                                        className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-primary text-white"
                                       >
                                         Ваша бронь
                                       </span>
@@ -719,7 +497,9 @@ export default function Home() {
             <div className="details-body">
               <div className="detail-eyebrow">ТВОЁ ПРОСТРАНСТВО</div>
               <h2 id="selected-room-title">Коворкинг {selected.number}</h2>
-              <p id="selected-room-desc" className="detail-description">{selected.description}</p>
+              <p id="selected-room-desc" className="detail-description">
+                {selected.description}
+              </p>
 
               {/* SPECIAL NOTICE: ROOM ALREADY BOOKED BY ME */}
               {isThisRoomBooked && activeBooking && (
@@ -737,7 +517,9 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="text-[#33503f] leading-relaxed">
-                    {formatDate(activeBooking.date)} · {formatTime(activeBooking.startTime)} — {formatTime(activeBooking.endTime)}
+                    {formatDate(activeBooking.date)} ·{' '}
+                    {formatTime(activeBooking.startTime)} —{' '}
+                    {formatTime(activeBooking.endTime)}
                     <br />
                     Цель: <strong>{activeBooking.purpose}</strong>
                   </div>
@@ -777,12 +559,18 @@ export default function Home() {
                     Правило кампуса: 1 бронь на человека
                   </div>
                   <div className="leading-relaxed">
-                    У вас уже забронирован коворкинг <strong>К{activeBooking.roomNumber}</strong> ({activeBooking.roomFloor} этаж). Чтобы забронировать это помещение, сначала отмените текущую бронь.
+                    У вас уже забронирован коворкинг{' '}
+                    <strong>К{activeBooking.roomNumber}</strong> (
+                    {activeBooking.roomFloor} этаж). Чтобы забронировать это
+                    помещение, сначала отмените текущую бронь.
                   </div>
                 </div>
               )}
 
-              <div id="selected-room-availability-box" className={'availability-box availability-' + state.status}>
+              <div
+                id="selected-room-availability-box"
+                className={'availability-box availability-' + state.status}
+              >
                 <span className="availability-icon">
                   {state.status === 'busy' ? (
                     <Clock3 size={19} />
@@ -827,7 +615,11 @@ export default function Home() {
                 <h3>Расписание на день</h3>
                 <span>{formatDate(date, true)}</span>
               </div>
-              <div id="room-timeline-bar" className="timeline" aria-label="Занятость с 8 до 22 часов">
+              <div
+                id="room-timeline-bar"
+                className="timeline"
+                aria-label="Занятость с 8 до 22 часов"
+              >
                 {getSchedule(selected, date).map((booking, index) => (
                   <span
                     key={index}
@@ -879,7 +671,7 @@ export default function Home() {
               </div>
 
               {/* PRIMARY ACTION BUTTON */}
-              <button
+              <Button
                 id="choose-coworking-button"
                 type="button"
                 className="choose-button cursor-pointer"
@@ -889,29 +681,22 @@ export default function Home() {
                 {isThisRoomBooked
                   ? 'Управление бронью этого места'
                   : state.status === 'busy'
-                  ? 'Свободно с ' + formatTime(state.availableAt)
-                  : 'Забронировать'}
+                    ? 'Свободно с ' + formatTime(state.availableAt)
+                    : 'Забронировать'}
                 {state.status !== 'busy' && <ArrowRight size={18} />}
-              </button>
+              </Button>
               <p id="choose-coworking-note" className="choose-note">
                 {isThisRoomBooked
                   ? 'Бронь активна. Нажмите для просмотра или отмены'
                   : isOtherRoomBooked
-                  ? 'У вас уже забронировано другое место'
-                  : state.status === 'soon'
-                  ? 'Подойдёт для короткой встречи (скоро занято)'
-                  : 'Забронируйте помещение для индивидуальной или групповой работы'}
+                    ? 'У вас уже забронировано другое место'
+                    : state.status === 'soon'
+                      ? 'Подойдёт для короткой встречи (скоро занято)'
+                      : 'Забронируйте помещение для индивидуальной или групповой работы'}
               </p>
             </div>
           </aside>
         </div>
-        <footer id="site-footer" className="footer">
-          <span>Есть место — учиться, работать, создавать.</span>
-          <span>
-            <span className="footer-dot" />
-            Кампус открыт с 08:00 до 22:00
-          </span>
-        </footer>
       </main>
 
       {/* MODAL: BOOKING WORKFLOW */}
@@ -936,6 +721,6 @@ export default function Home() {
           }
         }}
       />
-    </div>
+    </SiteShell>
   );
 }
