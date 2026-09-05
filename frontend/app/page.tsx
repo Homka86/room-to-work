@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Clock3,
   DoorOpen,
+  GraduationCap,
   Info,
   Layers3,
   LayoutGrid,
@@ -23,6 +24,8 @@ import {
   MapPin,
   Monitor,
   Plug,
+  ShieldAlert,
+  Star,
   Trash2,
   Users,
   Volume2,
@@ -53,6 +56,13 @@ import {
 import { useUserBookings, evaluateBookingPermission } from '@/lib/bookings';
 import { BookingDialog } from '@/components/booking-dialog';
 import { MyBookingsDialog } from '@/components/my-bookings-dialog';
+import {
+  formatRating,
+  getFreeCancellationsLeft,
+  getStoredProfile,
+  isStudentBlocked,
+  useUserProfile,
+} from '@/lib/account';
 
 export default function Home() {
   const [floor, setFloor] = useState(1);
@@ -70,6 +80,10 @@ export default function Home() {
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
 
+  const { setRole } = useUserProfile();
+  const profile = getStoredProfile();
+  const isRatingBlocked = isStudentBlocked(profile);
+  const freeCancellationsLeft = getFreeCancellationsLeft(profile);
   const { activeBooking, cancel, refresh } = useUserBookings(date, time);
   const selected = ROOMS.find((room) => room.id === selectedId)!;
   const state = getRoomState(selected, date, time);
@@ -197,6 +211,29 @@ export default function Home() {
         </div>
 
         <div className="ml-auto flex items-center gap-2.5">
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-[11px] text-[#858a9c]">Роль</span>
+            <Select
+              value={profile.role}
+              onValueChange={(value) => {
+                if (value === 'student' || value === 'teacher') setRole(value);
+              }}
+            >
+              <SelectTrigger
+                id="header-role-select"
+                className="h-8 min-w-[126px] border-[#dfd6f2] bg-[#fbf9fe] text-xs font-semibold text-[#7560da]"
+                aria-label="Роль пользователя"
+              >
+                <SelectValue>
+                  {profile.role === 'student' ? 'Ученик' : 'Преподаватель'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Ученик</SelectItem>
+                <SelectItem value="teacher">Преподаватель</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <button
             id="header-my-bookings-button"
             type="button"
@@ -249,6 +286,95 @@ export default function Home() {
             </span>
           </div>
         </div>
+
+        <section
+          id="rating-policy-card"
+          className={`mb-5 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+            isRatingBlocked
+              ? 'border-[#f5ccd2] bg-[#fff6f7]'
+              : 'border-[#e4def2] bg-[#fbf9fe]'
+          }`}
+          aria-label="Рейтинг и роль пользователя"
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                isRatingBlocked
+                  ? 'bg-[#fdeef0] text-[#b94a57]'
+                  : 'bg-[#ede9fc] text-[#7560da]'
+              }`}
+            >
+              {isRatingBlocked ? (
+                <ShieldAlert size={20} />
+              ) : profile.role === 'student' ? (
+                <Star size={20} />
+              ) : (
+                <GraduationCap size={20} />
+              )}
+            </div>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-[#7560da]">
+                {profile.role === 'student'
+                  ? 'Рейтинг ученика'
+                  : 'Профиль преподавателя'}
+              </div>
+              <div className="text-sm font-semibold text-[#2a2d3c] mt-0.5">
+                {isRatingBlocked
+                  ? `Бронирование заблокировано до ${formatDate(profile.blockedUntil!)}`
+                  : profile.role === 'student'
+                  ? 'Рейтинг влияет на доступ к бронированиям'
+                  : 'Рейтинг не начисляется и не ограничивает бронирование'}
+              </div>
+              <div className="text-xs text-[#858a9c] mt-1">
+                {profile.role === 'student'
+                  ? `+1 за завершённую бронь · ${freeCancellationsLeft > 0 ? '1 бесплатная отмена в месяц' : 'бесплатная отмена в этом месяце уже использована'} · отмена более чем за 2 часа без штрафа · блокировка при −3 на 30 дней`
+                  : 'Для преподавателей доступны те же комнаты без рейтинговых ограничений'}
+              </div>
+              <div className="text-xs text-[#858a9c] mt-1">
+                Ограничение бронирования: один аккаунт — один активный коворкинг · один коворкинг — один ответственный.
+              </div>
+              <div className="sm:hidden flex items-center gap-2 mt-3">
+                <span className="text-xs font-medium text-[#6c647e]">Роль:</span>
+                <Select
+                  value={profile.role}
+                  onValueChange={(value) => {
+                    if (value === 'student' || value === 'teacher') setRole(value);
+                  }}
+                >
+                  <SelectTrigger
+                    id="mobile-role-select"
+                    className="h-8 min-w-[140px] border-[#dfd6f2] bg-white text-xs font-semibold text-[#7560da]"
+                    aria-label="Роль пользователя"
+                  >
+                    <SelectValue>
+                      {profile.role === 'student' ? 'Ученик' : 'Преподаватель'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Ученик</SelectItem>
+                    <SelectItem value="teacher">Преподаватель</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <div
+            className={`shrink-0 self-start sm:self-center rounded-xl px-4 py-2 text-center ${
+              isRatingBlocked
+                ? 'bg-[#fdeef0] text-[#b94a57]'
+                : 'bg-white border border-[#e7e1f2] text-[#7560da]'
+            }`}
+          >
+            <div className="text-[11px] uppercase tracking-wider font-semibold opacity-75">
+              {profile.role === 'student' ? 'Баланс' : 'Доступ'}
+            </div>
+            <div className="text-lg font-bold">
+              {profile.role === 'student'
+                ? `${formatRating(profile.rating)} баллов`
+                : 'Без ограничений'}
+            </div>
+          </div>
+        </section>
 
         {/* ACTIVE BOOKING BANNER */}
         {activeBooking && (

@@ -7,7 +7,10 @@ import {
   CheckCircle2,
   Clock,
   DoorOpen,
+  GraduationCap,
   History,
+  ShieldAlert,
+  Star,
   Trash2,
   User,
   Users,
@@ -22,6 +25,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatDate, formatTime } from '@/lib/campus';
 import { useUserBookings } from '@/lib/bookings';
+import { formatRating, isStudentBlocked, useUserProfile } from '@/lib/account';
 
 type MyBookingsDialogProps = {
   open: boolean;
@@ -41,6 +45,8 @@ export function MyBookingsDialog({
     cancel,
     refresh,
   } = useUserBookings();
+  const { profile } = useUserProfile();
+  const isBlocked = isStudentBlocked(profile);
 
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
@@ -73,6 +79,46 @@ export function MyBookingsDialog({
             </DialogDescription>
           </div>
         </div>
+
+        <div
+          id="my-bookings-rating-summary"
+          className={`rounded-xl border p-3.5 flex items-center justify-between gap-3 ${
+            isBlocked
+              ? 'border-[#f5ccd2] bg-[#fff6f7]'
+              : 'border-[#e4def2] bg-[#fbf9fe]'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                isBlocked
+                  ? 'bg-[#fdeef0] text-[#b94a57]'
+                  : 'bg-[#ede9fc] text-[#7560da]'
+              }`}
+            >
+              {isBlocked ? <ShieldAlert size={18} /> : profile.role === 'student' ? <Star size={18} /> : <GraduationCap size={18} />}
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-[#7560da]">
+                {profile.role === 'student' ? 'Рейтинг ученика' : 'Преподаватель'}
+              </div>
+              <div className="text-[11px] text-[#777c8e]">
+                {isBlocked
+                  ? `Блокировка до ${formatDate(profile.blockedUntil!)}`
+                  : profile.role === 'student'
+                  ? 'Завершение +1 · одна отмена в месяц бесплатна · поздняя отмена −2'
+                  : 'Рейтинг не влияет на доступ'}
+              </div>
+            </div>
+          </div>
+
+          <strong className={`text-sm ${isBlocked ? 'text-[#b94a57]' : 'text-[#7560da]'}`}>
+            {profile.role === 'student' ? `${formatRating(profile.rating)} баллов` : 'Без ограничений'}
+          </strong>
+        </div>
+        <p className="text-[11px] text-[#858a9c] m-0">
+          Один аккаунт может отвечать только за один коворкинг в одно время.
+        </p>
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList id="my-bookings-tabs-list" className="w-full grid grid-cols-2 bg-[#f0f1f6] p-1 rounded-lg mb-4">

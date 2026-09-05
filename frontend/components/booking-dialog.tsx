@@ -9,6 +9,7 @@ import {
   Clock,
   DoorOpen,
   Info,
+  ShieldAlert,
   Trash2,
   User,
   Users,
@@ -38,9 +39,12 @@ import {
   evaluateBookingPermission,
   createNewBooking,
   formatBookingDuration,
+  getCancellationMessage,
+  getCancellationOutcome,
   POPULAR_PURPOSES,
   type UserBooking,
 } from '@/lib/bookings';
+import { formatRating, isStudentBlocked, useUserProfile } from '@/lib/account';
 
 type BookingDialogProps = {
   room: Room | null;
@@ -65,6 +69,11 @@ export function BookingDialog({
     selectedDate,
     selectedTime,
   );
+  const { profile } = useUserProfile();
+  const isBlocked = isStudentBlocked(profile);
+  const cancellationOutcome = activeBooking
+    ? getCancellationOutcome(activeBooking, selectedDate, selectedTime)
+    : null;
 
   const [userName, setUserName] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -325,6 +334,11 @@ export function BookingDialog({
                   Помещение снова станет доступным для всех студентов и команд
                   кампуса.
                 </p>
+                {cancellationOutcome && (
+                  <p className="text-xs text-[#7e4750] m-0 leading-relaxed">
+                    {getCancellationMessage(cancellationOutcome)}
+                  </p>
+                )}
                 <div className="flex gap-2 mt-1">
                   <button
                     id="booking-confirm-cancel-button"
@@ -432,6 +446,48 @@ export function BookingDialog({
                 </button>
               )}
             </div>
+          </div>
+        ) : isBlocked ? (
+          <div id="booking-blocked-view" className="flex flex-col gap-4 py-1">
+            <div className="flex items-center gap-3 border-b border-[#f5ccd2] pb-4">
+              <div className="w-12 h-12 rounded-xl bg-[#fdeef0] text-[#b94a57] flex items-center justify-center shrink-0">
+                <ShieldAlert size={25} />
+              </div>
+              <div>
+                <DialogTitle id="booking-blocked-title" className="text-xl font-bold text-[#2a2d3c] m-0">
+                  Бронирование временно недоступно
+                </DialogTitle>
+                <DialogDescription id="booking-blocked-desc" className="text-sm text-[#777c8e] m-0">
+                  Рейтинг ученика достиг критического значения.
+                </DialogDescription>
+              </div>
+            </div>
+
+            <div className="bg-[#fff6f7] border border-[#f5ccd2] rounded-xl p-4 text-sm text-[#8f323c] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span>Ваш рейтинг</span>
+                <strong>{formatRating(profile.rating)} баллов</strong>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span>Доступ вернётся</span>
+                <strong>{formatDate(profile.blockedUntil!)}</strong>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#777c8e] leading-relaxed m-0">
+              За завершённую бронь начисляется +1 балл, за отмену списывается −2.
+              При рейтинге −3 и ниже бронирование блокируется на 30 дней.
+            </p>
+
+            <button
+              id="booking-blocked-close-button"
+              type="button"
+              className="choose-button mt-1"
+              onClick={() => onOpenChange(false)}
+            >
+              Понятно
+              <Check size={18} />
+            </button>
           </div>
         ) : (
           /* Normal Booking Form */
@@ -616,8 +672,9 @@ export function BookingDialog({
             <div id="booking-rules-note" className="bg-[#f7f5fd] border border-[#e8e2f6] rounded-lg p-2.5 text-xs text-[#756a92] flex items-center gap-2">
               <Info size={15} className="shrink-0 text-[#7560da]" />
               <span>
-                Бронирование бесплатное. Действует правило: 1 человек = 1 активная
-                бронь.
+                {profile.role === 'student'
+                  ? `Рейтинг: ${formatRating(profile.rating)}. Завершение +1, одна отмена в месяц бесплатна, отмена более чем за 2 часа без штрафа. Один аккаунт = один активный коворкинг.`
+                  : 'Роль преподавателя: рейтинг не влияет на бронирование. Один аккаунт = один активный коворкинг; один коворкинг = один ответственный.'}
               </span>
             </div>
 

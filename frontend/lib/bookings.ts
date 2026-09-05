@@ -7,6 +7,15 @@ import {
   formatDate,
   type Room,
 } from '@/lib/campus';
+import {
+  applyRatingDelta,
+  CANCEL_BOOKING_PENALTY,
+  COMPLETED_BOOKING_REWARD,
+  consumeFreeCancellation,
+  getFreeCancellationsLeft,
+  getStoredProfile,
+  isStudentBlocked,
+} from '@/lib/account';
 
 export type BookingStatus = 'active' | 'completed' | 'cancelled';
 
@@ -26,8 +35,28 @@ export type UserBooking = {
   createdAt: string;
 };
 
+export type CancellationOutcome =
+  | 'early'
+  | 'free_monthly'
+  | 'penalty'
+  | 'teacher';
+
+export function getCancellationMessage(outcome: CancellationOutcome): string {
+  if (outcome === 'early') {
+    return 'До начала больше 2 часов — рейтинг не изменится, и месячная льгота сохранится.';
+  }
+  if (outcome === 'free_monthly') {
+    return 'Это ваша одна бесплатная отмена в этом месяце — рейтинг не изменится.';
+  }
+  if (outcome === 'teacher') {
+    return 'Для преподавателя отмена не влияет на рейтинг.';
+  }
+  return 'Месячная бесплатная отмена уже использована — рейтинг уменьшится на 2 балла.';
+}
+
 export const BOOKINGS_STORAGE_KEY = 'campus_user_bookings_v1';
 export const BOOKINGS_CHANGED_EVENT = 'campus_user_bookings_changed';
+export const MAX_ACTIVE_BOOKINGS_PER_ACCOUNT = 1;
 
 export const POPULAR_PURPOSES = [
   'Командный проект',
@@ -71,6 +100,7 @@ export function getStoredBookings(
     const normalized = parsed.map((item) => {
       if (item.status === 'active' && isBookingExpired(item, currentDate, currentTime)) {
         changed = true;
+        applyRatingDelta(COMPLETED_BOOKING_REWARD);
         return { ...item, status: 'completed' as const };
       }
       return item;
@@ -98,6 +128,33 @@ export function persistBookings(bookings: UserBooking[]): void {
   }
 }
 
+function toTimestamp(date: string, minutes: number): number {
+  return new Date(`${date}T${formatTime(minutes)}:00`).getTime();
+}
+
+export function getCancellationOutcome(
+  booking: UserBooking,
+  currentDate = DEMO_DATE,
+  currentTime = 840,
+): CancellationOutcome {
+  const profile = getStoredProfile();
+  if (profile.role === 'teacher') return 'teacher';
+
+  const minutesUntilStart = Math.round(
+    (toTimestamp(booking.date, booking.startTime) -
+      toTimestamp(currentDate, currentTime)) /
+      60000,
+  );
+  if (minutesUntilStart > 120) return 'early';
+  const referenceDateTime = new Date(
+    `${currentDate}T${formatTime(currentTime)}:00`,
+  );
+  if (getFreeCancellationsLeft(profile, referenceDateTime) > 0) {
+    return 'free_monthly';
+  }
+  return 'penalty';
+}
+
 /**
  * Returns the currently active booking for the user, if any.
  * By campus rules, a user may hold at most one active booking.
@@ -121,8 +178,20 @@ export function evaluateBookingPermission(
   allowed: boolean;
   isSameRoomBooked: boolean;
   activeBooking: UserBooking | null;
+  blockedByRating?: boolean;
   message?: string;
 } {
+  const profile = getStoredProfile();
+  if (isStudentBlocked(profile)) {
+    return {
+      allowed: false,
+      isSameRoomBooked: false,
+      activeBooking: null,
+      blockedByRating: true,
+      message: `Бронирование заблокировано до ${formatDate(profile.blockedUntil!)} из-за низкого рейтинга (${profile.rating}).`,
+    };
+  }
+
   const active = getActiveUserBooking(currentDate, currentTime);
   if (!active) {
     return { allowed: true, isSameRoomBooked: false, activeBooking: null };
@@ -141,7 +210,7 @@ export function evaluateBookingPermission(
     allowed: false,
     isSameRoomBooked: false,
     activeBooking: active,
-    message: `У вас уже есть активная бронь коворкинга К${active.roomNumber} (${active.roomFloor} этаж). По правилам кампуса нельзя забронировать другое помещение, пока не отменена текущая бронь.`,
+    message: `У аккаунта уже есть активная бронь коворкинга К${active.roomNumber} (${active.roomFloor} этаж). Один аккаунт может отвечать только за один коворкинг в одно время.`,
   };
 }
 
@@ -221,20 +290,35 @@ export function createNewBooking({
 /**
  * Cancels an existing booking by its ID.
  */
-export function cancelExistingBooking(bookingId: string): {
+export function cancelExistingBooking(
+  bookingId: string,
+  currentDate = DEMO_DATE,
+  currentTime = 840,
+): {
   success: boolean;
   error?: string;
 } {
-  const all = getStoredBookings();
+  const all = getStoredBookings(currentDate, currentTime);
   const target = all.find((b) => b.id === bookingId);
   if (!target) {
     return { success: false, error: 'Бронирование не найдено.' };
+  }
+  if (target.status !== 'active') {
+    return { success: false, error: 'Это бронирование уже завершено.' };
   }
 
   const updated = all.map((b) =>
     b.id === bookingId ? { ...b, status: 'cancelled' as const } : b,
   );
   persistBookings(updated);
+  const outcome = getCancellationOutcome(target, currentDate, currentTime);
+  if (outcome === 'free_monthly') {
+    consumeFreeCancellation(
+      new Date(`${currentDate}T${formatTime(currentTime)}:00`),
+    );
+  } else if (outcome === 'penalty') {
+    applyRatingDelta(CANCEL_BOOKING_PENALTY);
+  }
   return { success: true };
 }
 
@@ -285,10 +369,10 @@ export function useUserBookings(referenceDate = DEMO_DATE, referenceTime = 840) 
   );
 
   const cancel = useCallback((bookingId: string) => {
-    const res = cancelExistingBooking(bookingId);
+    const res = cancelExistingBooking(bookingId, referenceDate, referenceTime);
     if (res.success) refresh();
     return res;
-  }, [refresh]);
+  }, [refresh, referenceDate, referenceTime]);
 
   const cancelActive = useCallback(() => {
     if (!activeBooking) return { success: false, error: 'Нет активной брони.' };

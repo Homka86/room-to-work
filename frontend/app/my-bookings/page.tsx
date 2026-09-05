@@ -143,7 +143,7 @@ export default function MyBookingsPage() {
               <div className="text-xs text-[#858a9c] flex items-center gap-1.5">
                 <AlertCircle size={14} className="text-[#7560da]" />
                 <span>
-                  Правило: не более 1 активной брони на одного пользователя
+                  Правило: один аккаунт — один активный коворкинг и один ответственный на коворкинг
                 </span>
               </div>
             </div>
