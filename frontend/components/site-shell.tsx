@@ -2,7 +2,6 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -56,12 +55,13 @@ function SiteHeader({
           rel="noreferrer"
           aria-label="Личный кабинет студента УрФУ"
         >
-          <Image
+          {/* A local SVG needs no optimization; avoid the framework image shim. */}
+          {/* oxlint-disable-next-line next/no-img-element */}
+          <img
             src="/urfu-logo.svg"
             alt="Уральский федеральный университет"
             width={213}
             height={94}
-            unoptimized
           />
         </a>
         <Link
