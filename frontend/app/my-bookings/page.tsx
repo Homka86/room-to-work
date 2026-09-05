@@ -359,7 +359,7 @@ export default function MyBookingsPage() {
                     href="/"
                     className="choose-button max-w-[240px] mt-2 no-underline text-center"
                   >
-                    Выбрать коворкинг
+                    Забронировать
                     <ArrowRight size={16} />
                   </Link>
                 </div>

@@ -19,7 +19,7 @@ export const INITIAL_RATING = 0;
 export const COMPLETED_BOOKING_REWARD = 1;
 export const CANCEL_BOOKING_PENALTY = -2;
 export const RATING_BLOCK_THRESHOLD = -3;
-export const RATING_BLOCK_DAYS = 30;
+export const RATING_BLOCK_DAYS = 7;
 export const FREE_CANCELLATIONS_PER_MONTH = 1;
 
 const DEFAULT_PROFILE: UserProfile = {

@@ -263,7 +263,7 @@ export function MyBookingsDialog({
                   </h4>
                   <p className="text-xs text-[#858a9c] m-0 max-w-xs leading-relaxed">
                     Выберите свободный коворкинг на нужном этаже и нажмите
-                    «Выбрать коворкинг», чтобы забронировать место.
+                    «Забронировать», чтобы оформить место.
                   </p>
                 </div>
                 <button
@@ -272,7 +272,7 @@ export function MyBookingsDialog({
                   className="choose-button max-w-[200px] h-9 text-xs mt-1"
                   onClick={() => onOpenChange(false)}
                 >
-                  Выбрать коворкинг
+                  Забронировать
                 </button>
               </div>
             )}

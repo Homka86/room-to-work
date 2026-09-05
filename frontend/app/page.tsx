@@ -327,7 +327,7 @@ export default function Home() {
               </div>
               <div className="text-xs text-[#858a9c] mt-1">
                 {profile.role === 'student'
-                  ? `+1 за завершённую бронь · ${freeCancellationsLeft > 0 ? '1 бесплатная отмена в месяц' : 'бесплатная отмена в этом месяце уже использована'} · отмена более чем за 2 часа без штрафа · блокировка при −3 на 30 дней`
+                  ? `+1 за завершённую бронь · ${freeCancellationsLeft > 0 ? '1 бесплатная отмена в месяц' : 'бесплатная отмена в этом месяце уже использована'} · отмена более чем за 2 часа без штрафа · блокировка при −3 на 7 дней`
                   : 'Для преподавателей доступны те же комнаты без рейтинговых ограничений'}
               </div>
               <div className="text-xs text-[#858a9c] mt-1">
@@ -678,7 +678,7 @@ export default function Home() {
                       </span>
                       <span>
                         <i className="legend-soon" />
-                        Бронь в течение 30 мин
+                        Займут в течение 30 мин
                       </span>
                       <span>
                         <i className="legend-busy" />
@@ -890,7 +890,7 @@ export default function Home() {
                   ? 'Управление бронью этого места'
                   : state.status === 'busy'
                   ? 'Свободно с ' + formatTime(state.availableAt)
-                  : 'Выбрать коворкинг'}
+                  : 'Забронировать'}
                 {state.status !== 'busy' && <ArrowRight size={18} />}
               </button>
               <p id="choose-coworking-note" className="choose-note">
