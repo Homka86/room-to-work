@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
+import Link from 'next/link';
 import {
   ArrowDown,
   ArrowRight,
   ArrowUpRight,
+  Bookmark,
   Building2,
   CalendarDays,
   Check,
   CheckCheck,
+  CheckCircle2,
   ChevronRight,
   Clock3,
   DoorOpen,
@@ -20,6 +23,7 @@ import {
   MapPin,
   Monitor,
   Plug,
+  Trash2,
   Users,
   Volume2,
   VolumeX,
@@ -34,12 +38,6 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { useCampusTools } from '@/hooks/use-campus-tools';
 import {
   ROOMS,
@@ -52,6 +50,9 @@ import {
   formatDate,
   type Room,
 } from '@/lib/campus';
+import { useUserBookings, evaluateBookingPermission } from '@/lib/bookings';
+import { BookingDialog } from '@/components/booking-dialog';
+import { MyBookingsDialog } from '@/components/my-bookings-dialog';
 
 export default function Home() {
   const [floor, setFloor] = useState(1);
@@ -66,12 +67,21 @@ export default function Home() {
         getRoomState(room, DEMO_DATE, 840).status === 'free',
     )!.id,
   );
-  const [confirmation, setConfirmation] = useState(false);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [myBookingsOpen, setMyBookingsOpen] = useState(false);
+
+  const { activeBooking, cancel, refresh } = useUserBookings(date, time);
   const selected = ROOMS.find((room) => room.id === selectedId)!;
   const state = getRoomState(selected, date, time);
   const floorRooms = ROOMS.filter((room) => room.floor === floor);
   const counts = { free: 0, soon: 0, busy: 0 };
   ROOMS.forEach((room) => counts[getRoomState(room, date, time).status]++);
+
+  const isThisRoomBooked = activeBooking?.roomId === selected.id;
+  const permission = evaluateBookingPermission(selected.id, date, time);
+  const isOtherRoomBooked =
+    !permission.allowed && !isThisRoomBooked && Boolean(activeBooking);
+
   useCampusTools(
     { floor, date, time, selectedId },
     { setFloor, setSelectedId },
@@ -107,15 +117,19 @@ export default function Home() {
   function renderRoom(room: Room, index: number) {
     const availability = getRoomState(room, date, time);
     const dimmed = onlyFree && availability.status !== 'free';
+    const isBookedByMe = activeBooking?.roomId === room.id;
+
     return (
       <button
+        id={`room-card-${room.id}`}
         type="button"
         key={room.id}
         className={
           'room room-' +
           availability.status +
           (room.id === selectedId ? ' room-selected' : '') +
-          (dimmed ? ' room-dimmed' : '')
+          (dimmed ? ' room-dimmed' : '') +
+          (isBookedByMe ? ' ring-2 ring-[#7560da] ring-offset-2' : '')
         }
         onClick={() => selectRoom(room.id)}
         disabled={dimmed}
@@ -127,13 +141,23 @@ export default function Home() {
           availability.label +
           ', ' +
           room.capacity +
-          ' мест'
+          ' мест' +
+          (isBookedByMe ? ', забронировано вами' : '')
         }
         style={{ '--room-delay': index * 35 + 'ms' } as CSSProperties}
       >
         <span className="room-top">
           <span className="room-code">К{room.number}</span>
-          {room.id === selectedId ? (
+          {isBookedByMe ? (
+            <span
+              id={`room-user-badge-${room.id}`}
+              className="px-1.5 py-0.5 rounded bg-[#7560da] text-white text-[10px] font-bold flex items-center gap-0.5"
+              title="Ваша активная бронь"
+            >
+              <Bookmark size={11} />
+              Вы
+            </span>
+          ) : room.id === selectedId ? (
             <span className="selected-mark">
               <Check size={13} />
             </span>
@@ -148,46 +172,75 @@ export default function Home() {
         </span>
         <span className="room-bottom">
           <span className="status-dot" />
-          {availability.shortLabel}
+          {isBookedByMe ? 'Ваша бронь' : availability.shortLabel}
         </span>
       </button>
     );
   }
 
   return (
-    <div className="site-shell">
-      <header className="topbar">
-        <a href="/" className="brand" aria-label="Есть место — главная">
+    <div id="site-root" className="site-shell">
+      <header id="site-topbar" className="topbar">
+        <Link id="brand-logo-link" href="/" className="brand" aria-label="Есть место — главная">
           <span className="brand-icon">
             <DoorOpen size={24} strokeWidth={2.4} />
           </span>
           <span>
             есть место<span className="brand-dot">.</span>
           </span>
-        </a>
-        <div className="header-location">
+        </Link>
+        <div id="campus-location-info" className="header-location">
           <Building2 size={17} />
           <span>Университетский кампус</span>
           <span className="header-separator" />
           <span className="muted">3 этажа · 23 коворкинга</span>
         </div>
-        <span className="demo-pill">
-          <span />
-          Демо-версия
-        </span>
+
+        <div className="ml-auto flex items-center gap-2.5">
+          <button
+            id="header-my-bookings-button"
+            type="button"
+            className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#dfd6f2] bg-[#fbf9fe] text-[#7560da] hover:bg-[#f3edf9] transition-all cursor-pointer"
+            onClick={() => setMyBookingsOpen(true)}
+            aria-label="Мои бронирования"
+          >
+            <Bookmark size={15} />
+            <span>Мои бронирования</span>
+            {activeBooking ? (
+              <span
+                id="header-active-booking-pill"
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#eaf7ee] text-[#278557] text-[11px] font-bold"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#278557]" />
+                К{activeBooking.roomNumber}
+              </span>
+            ) : (
+              <span
+                id="header-no-booking-counter"
+                className="text-[11px] px-1.5 py-0.2 rounded-full bg-[#ede9f9] text-[#7560da]"
+              >
+                0
+              </span>
+            )}
+          </button>
+          <span id="demo-pill-badge" className="demo-pill !ml-0">
+            <span />
+            Демо-версия
+          </span>
+        </div>
       </header>
-      <main className="workspace">
-        <div className="breadcrumb">
+      <main id="workspace-main" className="workspace">
+        <div id="campus-breadcrumb" className="breadcrumb">
           <span>Кампус</span>
           <ChevronRight size={14} />
           <span>Коворкинги</span>
         </div>
-        <div className="page-heading">
+        <div id="page-heading-block" className="page-heading">
           <div>
             <h1>Место для твоих идей</h1>
             <p>Найди свободный коворкинг на нужном этаже.</p>
           </div>
-          <div className="campus-stamp">
+          <div id="campus-stamp-block" className="campus-stamp">
             <Layers3 size={21} />
             <span>
               Один кампус.
@@ -196,6 +249,50 @@ export default function Home() {
             </span>
           </div>
         </div>
+
+        {/* ACTIVE BOOKING BANNER */}
+        {activeBooking && (
+          <aside
+            id="active-booking-banner"
+            className="mb-5 p-3.5 sm:p-4 rounded-xl border border-[#d8ccef] bg-[#fbf9fe] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+            aria-label="Текущее активное бронирование"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#eaf7ee] text-[#278557] flex items-center justify-center shrink-0">
+                <CheckCircle2 size={20} />
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-[#7560da] uppercase tracking-wider">
+                  Ваша активная бронь
+                </div>
+                <div className="text-sm font-bold text-[#2a2d3c]">
+                  Коворкинг К{activeBooking.roomNumber} ({activeBooking.roomFloor} этаж) · {formatDate(activeBooking.date)} с {formatTime(activeBooking.startTime)} до {formatTime(activeBooking.endTime)}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                id="banner-show-room-button"
+                type="button"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#cfc3e8] bg-white text-[#2a2d3c] hover:bg-[#f6f2fd] transition-colors cursor-pointer"
+                onClick={() => {
+                  changeFloor(activeBooking.roomFloor);
+                  selectRoom(activeBooking.roomId);
+                }}
+              >
+                Показать на схеме
+              </button>
+              <button
+                id="banner-manage-booking-button"
+                type="button"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#7560da] text-white hover:bg-[#644fc9] transition-colors cursor-pointer"
+                onClick={() => setMyBookingsOpen(true)}
+              >
+                Управление бронью
+              </button>
+            </div>
+          </aside>
+        )}
         <section className="control-bar" aria-label="Дата и время посещения">
           <label className="date-control">
             <CalendarDays size={19} />
@@ -236,8 +333,9 @@ export default function Home() {
             </Select>
           </div>
           <div className="control-spacer" />
-          <label className="free-filter">
+          <label htmlFor="only-free-toggle" className="free-filter">
             <Switch
+              id="only-free-toggle"
               checked={onlyFree}
               onCheckedChange={setOnlyFree}
               aria-label="Только свободные коворкинги"
@@ -372,15 +470,18 @@ export default function Home() {
                           )
                           .map((room) => {
                             const current = getRoomState(room, date, time);
+                            const isBookedByMe = activeBooking?.roomId === room.id;
                             return (
                               <button
+                                id={`list-room-${room.id}`}
                                 type="button"
                                 key={room.id}
                                 className={
                                   'list-room ' +
                                   (room.id === selectedId
-                                    ? 'list-room-selected'
-                                    : '')
+                                    ? 'list-room-selected '
+                                    : '') +
+                                  (isBookedByMe ? 'border-[#7560da] bg-[#fbf9fe]' : '')
                                 }
                                 onClick={() => selectRoom(room.id)}
                                 aria-pressed={room.id === selectedId}
@@ -393,18 +494,33 @@ export default function Home() {
                                   <DoorOpen size={21} />
                                 </span>
                                 <span className="list-room-title">
-                                  <strong>Коворкинг {room.number}</strong>
+                                  <span className="flex items-center gap-1.5">
+                                    <strong>Коворкинг {room.number}</strong>
+                                    {isBookedByMe && (
+                                      <span
+                                        id={`list-room-badge-${room.id}`}
+                                        className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#7560da] text-white"
+                                      >
+                                        Ваша бронь
+                                      </span>
+                                    )}
+                                  </span>
                                   <span>
                                     {room.kind} · {room.capacity} мест
                                   </span>
                                 </span>
                                 <span
                                   className={
-                                    'list-status ' + current.status + '-text'
+                                    'list-status ' +
+                                    (isBookedByMe
+                                      ? 'free-text'
+                                      : current.status + '-text')
                                   }
                                 >
                                   <i />
-                                  {current.label}
+                                  {isBookedByMe
+                                    ? 'Забронировано вами'
+                                    : current.label}
                                 </span>
                                 <ChevronRight size={18} />
                               </button>
@@ -476,9 +592,71 @@ export default function Home() {
             </div>
             <div className="details-body">
               <div className="detail-eyebrow">ТВОЁ ПРОСТРАНСТВО</div>
-              <h2>Коворкинг {selected.number}</h2>
-              <p className="detail-description">{selected.description}</p>
-              <div className={'availability-box availability-' + state.status}>
+              <h2 id="selected-room-title">Коворкинг {selected.number}</h2>
+              <p id="selected-room-desc" className="detail-description">{selected.description}</p>
+
+              {/* SPECIAL NOTICE: ROOM ALREADY BOOKED BY ME */}
+              {isThisRoomBooked && activeBooking && (
+                <div
+                  id="active-room-booked-card"
+                  className="p-3.5 mb-3 rounded-xl border border-[#278557]/30 bg-[#eaf7ee] text-xs flex flex-col gap-2"
+                >
+                  <div className="flex items-center justify-between font-semibold text-[#278557]">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 size={16} />
+                      Вы забронировали это место
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-white text-[#278557] font-bold text-[10px]">
+                      Активно
+                    </span>
+                  </div>
+                  <div className="text-[#33503f] leading-relaxed">
+                    {formatDate(activeBooking.date)} · {formatTime(activeBooking.startTime)} — {formatTime(activeBooking.endTime)}
+                    <br />
+                    Цель: <strong>{activeBooking.purpose}</strong>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      id="sidebar-cancel-booking-button"
+                      type="button"
+                      className="flex-1 py-1.5 px-2 rounded-lg bg-white border border-[#cf414d] text-[#cf414d] hover:bg-[#fdeef0] font-semibold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                      onClick={() => {
+                        cancel(activeBooking.id);
+                        refresh();
+                      }}
+                    >
+                      <Trash2 size={13} />
+                      Отменить бронь
+                    </button>
+                    <button
+                      id="sidebar-manage-booking-button"
+                      type="button"
+                      className="py-1.5 px-3 rounded-lg bg-[#278557] text-white hover:bg-[#1f6b46] font-semibold text-xs transition-colors cursor-pointer"
+                      onClick={() => setBookingDialogOpen(true)}
+                    >
+                      Детали
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* SPECIAL NOTICE: ANOTHER ROOM BOOKED BY ME */}
+              {isOtherRoomBooked && activeBooking && (
+                <div
+                  id="other-room-booked-notice"
+                  className="p-3 mb-3 rounded-xl border border-[#f5ccd2] bg-[#fdeef0] text-xs text-[#8f323c] flex flex-col gap-1.5"
+                >
+                  <div className="font-semibold flex items-center gap-1.5">
+                    <Info size={14} />
+                    Правило кампуса: 1 бронь на человека
+                  </div>
+                  <div className="leading-relaxed">
+                    У вас уже забронирован коворкинг <strong>К{activeBooking.roomNumber}</strong> ({activeBooking.roomFloor} этаж). Чтобы забронировать это помещение, сначала отмените текущую бронь.
+                  </div>
+                </div>
+              )}
+
+              <div id="selected-room-availability-box" className={'availability-box availability-' + state.status}>
                 <span className="availability-icon">
                   {state.status === 'busy' ? (
                     <Clock3 size={19} />
@@ -491,7 +669,7 @@ export default function Home() {
                   <span>{state.description}</span>
                 </div>
               </div>
-              <div className="amenities">
+              <div id="room-amenities-list" className="amenities">
                 <span>
                   <Users size={17} />
                   {selected.capacity} мест
@@ -523,7 +701,7 @@ export default function Home() {
                 <h3>Расписание на день</h3>
                 <span>{formatDate(date, true)}</span>
               </div>
-              <div className="timeline" aria-label="Занятость с 8 до 22 часов">
+              <div id="room-timeline-bar" className="timeline" aria-label="Занятость с 8 до 22 часов">
                 {getSchedule(selected, date).map((booking, index) => (
                   <span
                     key={index}
@@ -551,7 +729,7 @@ export default function Home() {
                 <span>16:00</span>
                 <span>22:00</span>
               </div>
-              <div className="schedule-list">
+              <div id="room-schedule-list" className="schedule-list">
                 {getSchedule(selected, date)
                   .filter((booking) => booking.end > time)
                   .slice(0, 2)
@@ -573,26 +751,35 @@ export default function Home() {
                   </div>
                 )}
               </div>
+
+              {/* PRIMARY ACTION BUTTON */}
               <button
+                id="choose-coworking-button"
                 type="button"
-                className="choose-button"
-                disabled={state.status === 'busy'}
-                onClick={() => setConfirmation(true)}
+                className="choose-button cursor-pointer"
+                disabled={!isThisRoomBooked && state.status === 'busy'}
+                onClick={() => setBookingDialogOpen(true)}
               >
-                {state.status === 'busy'
+                {isThisRoomBooked
+                  ? 'Управление бронью этого места'
+                  : state.status === 'busy'
                   ? 'Свободно с ' + formatTime(state.availableAt)
                   : 'Выбрать коворкинг'}
                 {state.status !== 'busy' && <ArrowRight size={18} />}
               </button>
-              <p className="choose-note">
-                {state.status === 'soon'
-                  ? 'Подойдёт для короткой встречи'
-                  : 'Выбор в демо-режиме, без бронирования'}
+              <p id="choose-coworking-note" className="choose-note">
+                {isThisRoomBooked
+                  ? 'Бронь активна. Нажмите для просмотра или отмены'
+                  : isOtherRoomBooked
+                  ? 'У вас уже забронировано другое место'
+                  : state.status === 'soon'
+                  ? 'Подойдёт для короткой встречи (скоро занято)'
+                  : 'Забронируйте помещение для индивидуальной или групповой работы'}
               </p>
             </div>
           </aside>
         </div>
-        <footer className="footer">
+        <footer id="site-footer" className="footer">
           <span>Есть место — учиться, работать, создавать.</span>
           <span>
             <span className="footer-dot" />
@@ -600,36 +787,29 @@ export default function Home() {
           </span>
         </footer>
       </main>
-      <Dialog open={confirmation} onOpenChange={setConfirmation}>
-        <DialogContent className="confirmation-dialog" showCloseButton={false}>
-          <div className="confirmation-icon">
-            <Check size={30} />
-          </div>
-          <DialogTitle className="confirmation-title">
-            Место выбрано
-          </DialogTitle>
-          <DialogDescription className="confirmation-description">
-            Коворкинг {selected.number} · {selected.floor} этаж
-            <br />
-            {formatDate(date)} в {formatTime(time)}
-          </DialogDescription>
-          <div className="confirmation-note">
-            <Info size={18} />
-            <span>
-              Это демонстрация интерфейса. Бронь не создана — подключим эту
-              возможность позже.
-            </span>
-          </div>
-          <button
-            type="button"
-            className="choose-button"
-            onClick={() => setConfirmation(false)}
-          >
-            Понятно
-            <Check size={18} />
-          </button>
-        </DialogContent>
-      </Dialog>
+
+      {/* MODAL: BOOKING WORKFLOW */}
+      <BookingDialog
+        room={selected}
+        open={bookingDialogOpen}
+        onOpenChange={setBookingDialogOpen}
+        selectedDate={date}
+        selectedTime={time}
+        onOpenMyBookings={() => setMyBookingsOpen(true)}
+      />
+
+      {/* MODAL: MY BOOKINGS LIST */}
+      <MyBookingsDialog
+        open={myBookingsOpen}
+        onOpenChange={setMyBookingsOpen}
+        onSelectRoom={(roomId) => {
+          const target = ROOMS.find((r) => r.id === roomId);
+          if (target) {
+            setFloor(target.floor);
+            selectRoom(target.id);
+          }
+        }}
+      />
     </div>
   );
 }
