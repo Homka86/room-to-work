@@ -272,32 +272,26 @@ export default function Home() {
             <span>Только свободные</span>
           </label>
         </section>
-        <div className="availability-overview" aria-live="polite">
-          {hasAvailabilitySelection ? (
-            <>
-              <span className="overview-label">Во всём кампусе</span>
-              <span className="overview-status free-text">
-                <i />
-                {counts.free} свободно
-              </span>
-              <span className="overview-status soon-text">
-                <i />
-                {counts.soon} скоро заняты
-              </span>
-              <span className="overview-status busy-text">
-                <i />
-                {counts.busy} занято
-              </span>
-              <span className="overview-at">
-                на {formatTime(availabilityTime)}
-              </span>
-            </>
-          ) : (
-            <span className="availability-prompt">
-              Занятость комнат показана в расписании выбранного коворкинга
+        {hasAvailabilitySelection && (
+          <div className="availability-overview" aria-live="polite">
+            <span className="overview-label">Во всём кампусе</span>
+            <span className="overview-status free-text">
+              <i />
+              {counts.free} свободно
             </span>
-          )}
-        </div>
+            <span className="overview-status soon-text">
+              <i />
+              {counts.soon} скоро заняты
+            </span>
+            <span className="overview-status busy-text">
+              <i />
+              {counts.busy} занято
+            </span>
+            <span className="overview-at">
+              на {formatTime(availabilityTime)}
+            </span>
+          </div>
+        )}
 
         <div className="main-grid">
           <section className="floor-section" aria-label="Выбор коворкинга">
