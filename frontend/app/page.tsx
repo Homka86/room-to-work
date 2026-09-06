@@ -664,78 +664,80 @@ export default function Home() {
                   </span>
                 )}
               </div>
-              {hasAvailabilitySelection ? (
-                <>
-                  <div className="schedule-heading">
-                    <h3>Расписание на день</h3>
-                    <span>{formatDate(availabilityDate, true)}</span>
-                  </div>
-                  <div
-                    id="room-timeline-bar"
-                    className="timeline"
-                    aria-label="Занятость с 8 до 22 часов"
-                  >
-                    {getSchedule(selected, availabilityDate).map(
-                      (booking, index) => (
-                        <span
-                          key={index}
-                          className="timeline-booking"
-                          style={{
-                            left: ((booking.start - 480) / 840) * 100 + '%',
-                            width:
-                              ((booking.end - booking.start) / 840) * 100 + '%',
-                          }}
-                          title={
-                            'Занято ' +
-                            formatTime(booking.start) +
-                            '–' +
-                            formatTime(booking.end)
-                          }
-                        />
-                      ),
-                    )}
+              <>
+                <div className="schedule-heading">
+                  <h3>Расписание на день</h3>
+                  <span>{formatDate(availabilityDate, true)}</span>
+                </div>
+                <div
+                  id="room-timeline-bar"
+                  className="timeline"
+                  aria-label="Занятость с 8 до 22 часов"
+                >
+                  {getSchedule(selected, availabilityDate).map(
+                    (booking, index) => (
+                      <span
+                        key={index}
+                        className="timeline-booking"
+                        style={{
+                          left: ((booking.start - 480) / 840) * 100 + '%',
+                          width:
+                            ((booking.end - booking.start) / 840) * 100 + '%',
+                        }}
+                        title={
+                          'Занято ' +
+                          formatTime(booking.start) +
+                          '–' +
+                          formatTime(booking.end)
+                        }
+                      />
+                    ),
+                  )}
+                  {hasAvailabilitySelection && (
                     <span
                       className="timeline-marker"
                       style={{
                         left: ((availabilityTime - 480) / 840) * 100 + '%',
                       }}
                     />
-                  </div>
-                  <div className="timeline-labels">
-                    <span>08:00</span>
-                    <span>12:00</span>
-                    <span>16:00</span>
-                    <span>22:00</span>
-                  </div>
-                  <div id="room-schedule-list" className="schedule-list">
-                    {getSchedule(selected, availabilityDate)
-                      .filter((booking) => booking.end > availabilityTime)
-                      .slice(0, 2)
-                      .map((booking, index) => (
-                        <div key={index}>
-                          <span>
-                            <span className="schedule-dot" />
-                            {formatTime(booking.start)} —{' '}
-                            {formatTime(booking.end)}
-                          </span>
-                          <span>Занято</span>
-                        </div>
-                      ))}
-                    {!getSchedule(selected, availabilityDate).some(
-                      (booking) => booking.end > availabilityTime,
-                    ) && (
-                      <div>
-                        <span className="free-text">Свободно до закрытия</span>
-                        <span>22:00</span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="neutral-schedule">
-                  Выберите дату и время, чтобы увидеть расписание
+                  )}
                 </div>
-              )}
+                <div className="timeline-labels">
+                  <span>08:00</span>
+                  <span>12:00</span>
+                  <span>16:00</span>
+                  <span>22:00</span>
+                </div>
+                <div id="room-schedule-list" className="schedule-list">
+                  {getSchedule(selected, availabilityDate)
+                    .filter(
+                      (booking) =>
+                        !hasAvailabilitySelection ||
+                        booking.end > availabilityTime,
+                    )
+                    .slice(0, 3)
+                    .map((booking, index) => (
+                      <div key={index}>
+                        <span>
+                          <span className="schedule-dot" />
+                          {formatTime(booking.start)} —{' '}
+                          {formatTime(booking.end)}
+                        </span>
+                        <span>Занято</span>
+                      </div>
+                    ))}
+                  {!getSchedule(selected, availabilityDate).some(
+                    (booking) =>
+                      !hasAvailabilitySelection ||
+                      booking.end > availabilityTime,
+                  ) && (
+                    <div>
+                      <span className="free-text">Свободно до закрытия</span>
+                      <span>22:00</span>
+                    </div>
+                  )}
+                </div>
+              </>
 
               {/* PRIMARY ACTION BUTTON */}
               <Button

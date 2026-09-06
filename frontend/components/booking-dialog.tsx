@@ -81,6 +81,7 @@ export function BookingDialog({
   const [bookingDate, setBookingDate] = useState(effectiveDate);
   const [startTime, setStartTime] = useState<number | null>(selectedTime);
   const [endTime, setEndTime] = useState<number | null>(null);
+  const [attendees, setAttendees] = useState(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<UserBooking | null>(
@@ -167,6 +168,7 @@ export function BookingDialog({
       date: bookingDate,
       startTime,
       endTime,
+      attendees,
       userName,
       purpose: finalPurpose,
     });
@@ -203,6 +205,7 @@ export function BookingDialog({
           setBookingDate(effectiveDate);
           setStartTime(selectedTime);
           setEndTime(null);
+          setAttendees(1);
           setErrorMsg(null);
         }
         if (!nextOpen) {
@@ -258,6 +261,12 @@ export function BookingDialog({
                   Цель:
                 </span>
                 <span className="font-medium">{createdBooking.purpose}</span>
+              </div>
+              <div className="text-muted-foreground">
+                <span className="text-muted-foreground text-xs block">
+                  Участники:
+                </span>
+                <span className="font-medium">{createdBooking.attendees}</span>
               </div>
             </div>
 
@@ -644,6 +653,36 @@ export function BookingDialog({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div>
+                <span className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  Количество человек
+                </span>
+                <Select
+                  value={String(attendees)}
+                  onValueChange={(value) => setAttendees(Number(value))}
+                >
+                  <SelectTrigger
+                    id="booking-attendees-select"
+                    className="w-full h-10 bg-card"
+                  >
+                    <SelectValue>{attendees}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      { length: room.capacity },
+                      (_, index) => index + 1,
+                    ).map((value) => (
+                      <SelectItem key={value} value={String(value)}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Укажите фактическое количество участников.
+                </p>
               </div>
 
               {/* Duration and helper info */}

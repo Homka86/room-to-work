@@ -8,7 +8,6 @@ import {
   Clock,
   DoorOpen,
   History,
-  Info,
   Trash2,
   User,
   Users,
@@ -23,7 +22,6 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatDate, formatTime } from '@/lib/campus';
 import { useUserBookings } from '@/lib/bookings';
-import { AdditionalInfoDialog } from '@/components/additional-info-dialog';
 import { RatingSummary } from '@/components/rating-summary';
 
 type MyBookingsDialogProps = {
@@ -45,7 +43,6 @@ export function MyBookingsDialog({
     refresh,
   } = useUserBookings();
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
-  const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
 
   const historyBookings = [...completedBookings, ...cancelledBookings].sort(
     (a, b) => b.createdAt.localeCompare(a.createdAt),
@@ -79,13 +76,6 @@ export function MyBookingsDialog({
 
         <div className="my-bookings-tools">
           <RatingSummary compact />
-          <button
-            type="button"
-            className="additional-info-link"
-            onClick={() => setAdditionalInfoOpen(true)}
-          >
-            <Info size={15} /> Доп. информация
-          </button>
         </div>
 
         <Tabs defaultValue="active" className="w-full">
@@ -166,7 +156,10 @@ export function MyBookingsDialog({
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Users size={15} className="text-muted-foreground" />
-                      <span>до {activeBooking.roomCapacity} мест</span>
+                      <span>
+                        {activeBooking.attendees} из{' '}
+                        {activeBooking.roomCapacity} мест
+                      </span>
                     </div>
                   </div>
 
@@ -328,6 +321,9 @@ export function MyBookingsDialog({
                         <span className="text-[#888] truncate max-w-[200px]">
                           Цель: {item.purpose}
                         </span>
+                        <span>
+                          Участники: {item.attendees} из {item.roomCapacity}
+                        </span>
                       </div>
                     </div>
                   );
@@ -344,10 +340,6 @@ export function MyBookingsDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
-      <AdditionalInfoDialog
-        open={additionalInfoOpen}
-        onOpenChange={setAdditionalInfoOpen}
-      />
     </Dialog>
   );
 }

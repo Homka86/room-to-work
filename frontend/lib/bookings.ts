@@ -28,6 +28,7 @@ export type UserBooking = {
   date: string;
   startTime: number;
   endTime: number;
+  attendees: number;
   userName: string;
   purpose: string;
   status: BookingStatus;
@@ -98,15 +99,19 @@ export function getStoredBookings(
     let changed = false;
 
     const normalized = parsed.map((item) => {
+      const attendees =
+        Number.isInteger(item.attendees) && item.attendees > 0
+          ? item.attendees
+          : 1;
       if (
         item.status === 'active' &&
         isBookingExpired(item, currentDate, currentTime)
       ) {
         changed = true;
         applyRatingDelta(COMPLETED_BOOKING_REWARD);
-        return { ...item, status: 'completed' as const };
+        return { ...item, attendees, status: 'completed' as const };
       }
-      return item;
+      return { ...item, attendees };
     });
 
     if (changed) {
@@ -226,6 +231,7 @@ export function createNewBooking({
   date,
   startTime,
   endTime,
+  attendees,
   userName,
   purpose,
 }: {
@@ -233,6 +239,7 @@ export function createNewBooking({
   date: string;
   startTime: number;
   endTime: number;
+  attendees: number;
   userName: string;
   purpose: string;
 }): { success: boolean; error?: string; booking?: UserBooking } {
@@ -263,6 +270,16 @@ export function createNewBooking({
       error: 'Максимальное время бронирования — 4 часа.',
     };
   }
+  if (
+    !Number.isInteger(attendees) ||
+    attendees < 1 ||
+    attendees > room.capacity
+  ) {
+    return {
+      success: false,
+      error: `Укажите от 1 до ${room.capacity} участников.`,
+    };
+  }
 
   const check = evaluateBookingPermission(room.id, date, startTime);
   if (!check.allowed) {
@@ -283,6 +300,7 @@ export function createNewBooking({
     date,
     startTime,
     endTime,
+    attendees,
     userName: trimmedName,
     purpose: trimmedPurpose,
     status: 'active',
@@ -404,6 +422,7 @@ export function useUserBookings(
       date: string;
       startTime: number;
       endTime: number;
+      attendees: number;
       userName: string;
       purpose: string;
     }) => {
