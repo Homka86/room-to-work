@@ -80,8 +80,8 @@ export default function Home() {
     : null;
   const displayState = state ?? {
     status: 'neutral' as const,
-    label: 'Выберите дату и время',
-    description: 'Статус коворкинга появится после выбора даты и времени.',
+    label: 'Занятость на день',
+    description: 'Подробное расписание комнаты показано ниже.',
     availableAt: availabilityTime,
   };
   const floorRooms = ROOMS.filter((room) => room.floor === floor);
@@ -294,7 +294,7 @@ export default function Home() {
             </>
           ) : (
             <span className="availability-prompt">
-              Выберите дату и время, чтобы увидеть занятость коворкингов
+              Занятость комнат показана в расписании выбранного коворкинга
             </span>
           )}
         </div>
@@ -476,7 +476,7 @@ export default function Home() {
                                   {isBookedByMe
                                     ? 'Забронировано вами'
                                     : (current?.label ??
-                                      'Выберите дату и время')}
+                                      'Занятость в расписании')}
                                 </span>
                                 <ChevronRight size={18} />
                               </button>

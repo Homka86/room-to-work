@@ -42,7 +42,7 @@ export function RoomCard({
         'Коворкинг ' +
         room.number +
         ', ' +
-        (availability?.label ?? 'Выберите дату и время') +
+        (availability?.label ?? 'Занятость в расписании') +
         ', ' +
         room.capacity +
         ' мест' +
@@ -78,7 +78,7 @@ export function RoomCard({
         <span className="status-dot" />
         {isBookedByMe
           ? 'Ваша бронь'
-          : (availability?.shortLabel ?? 'Выберите дату и время')}
+          : (availability?.shortLabel ?? 'Занятость в расписании')}
       </span>
     </button>
   );
