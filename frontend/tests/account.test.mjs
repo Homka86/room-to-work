@@ -17,7 +17,7 @@ const account = await import('../lib/account.ts');
 
 beforeEach(() => values.clear());
 
-test('student starts at zero and cancellation can trigger a 7-day block', () => {
+test('student starts at zero and rating no longer blocks the account', () => {
   const now = new Date('2026-09-05T12:00:00Z');
   assert.equal(account.getStoredProfile().rating, 0);
   assert.equal(account.getStoredProfile().role, 'student');
@@ -26,8 +26,8 @@ test('student starts at zero and cancellation can trigger a 7-day block', () => 
   const blocked = account.applyRatingDelta(account.CANCEL_BOOKING_PENALTY, now);
 
   assert.equal(blocked.rating, -4);
-  assert.equal(blocked.blockedUntil, '2026-09-12');
-  assert.equal(account.isStudentBlocked(blocked, now), true);
+  assert.equal(blocked.blockedUntil, null);
+  assert.equal(account.isStudentBlocked(blocked, now), false);
 });
 
 test('teacher rating is informational and never creates a block', () => {

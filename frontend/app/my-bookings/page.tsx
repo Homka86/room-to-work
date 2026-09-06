@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { SiteShell } from '@/components/site-shell';
+import { AdditionalInfoDialog } from '@/components/additional-info-dialog';
+import { RatingSummary } from '@/components/rating-summary';
 import Link from 'next/link';
 import {
   AlertCircle,
@@ -13,6 +15,7 @@ import {
   Clock,
   DoorOpen,
   History,
+  Info,
   Trash2,
   User,
   Users,
@@ -32,6 +35,7 @@ export default function MyBookingsPage() {
   } = useUserBookings();
 
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
 
   const historyBookings = [...completedBookings, ...cancelledBookings].sort(
     (a, b) => b.createdAt.localeCompare(a.createdAt),
@@ -67,6 +71,17 @@ export default function MyBookingsPage() {
           </div>
         </div>
 
+        <div className="my-bookings-tools page-rating-tools">
+          <RatingSummary compact />
+          <button
+            type="button"
+            className="additional-info-link"
+            onClick={() => setAdditionalInfoOpen(true)}
+          >
+            <Info size={15} /> Доп. информация
+          </button>
+        </div>
+
         {/* Tab switcher */}
         <div className="mb-6">
           <Tabs defaultValue="active" className="w-full">
@@ -98,13 +113,9 @@ export default function MyBookingsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <AlertCircle size={14} className="text-urfu-blue" />
-                <span>
-                  Правило: один аккаунт — один активный коворкинг и один
-                  ответственный на коворкинг
-                </span>
-              </div>
+              <span className="text-xs text-muted-foreground">
+                Управление текущими и прошедшими бронями
+              </span>
             </div>
 
             {/* TAB: ACTIVE */}
@@ -422,6 +433,10 @@ export default function MyBookingsPage() {
           </Tabs>
         </div>
       </main>
+      <AdditionalInfoDialog
+        open={additionalInfoOpen}
+        onOpenChange={setAdditionalInfoOpen}
+      />
     </SiteShell>
   );
 }

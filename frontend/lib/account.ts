@@ -90,17 +90,11 @@ export function isStudentBlocked(
   profile = getStoredProfile(),
   now = new Date(),
 ): boolean {
-  if (profile.role !== 'student' || !profile.blockedUntil) return false;
-  const blockedThrough = new Date(profile.blockedUntil + 'T23:59:59');
-  return blockedThrough.getTime() >= now.getTime();
-}
-
-function addDays(date: Date, days: number): string {
-  const result = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-  );
-  result.setUTCDate(result.getUTCDate() + days);
-  return result.toISOString().slice(0, 10);
+  // Kept as a compatibility helper for older localStorage profiles. Rating
+  // no longer blocks the account; it only limits access to popular rooms.
+  void profile;
+  void now;
+  return false;
 }
 
 export function formatRating(rating: number): string {
@@ -146,18 +140,13 @@ export function setUserRole(role: UserRole): UserProfile {
 /** Applies a rating event. Teachers keep their score but never get blocked. */
 export function applyRatingDelta(
   delta: number,
-  now = new Date(),
+  _now = new Date(),
 ): UserProfile {
   const current = getStoredProfile();
   if (current.role === 'teacher') return current;
 
   const rating = current.rating + delta;
-  const canStartNewBlock =
-    !current.blockedUntil || !isStudentBlocked(current, now);
-  const blockedUntil =
-    rating <= RATING_BLOCK_THRESHOLD && canStartNewBlock
-      ? addDays(now, RATING_BLOCK_DAYS)
-      : current.blockedUntil;
+  const blockedUntil = null;
 
   const next = { ...current, rating, blockedUntil };
   persistProfile(next);
@@ -165,9 +154,7 @@ export function applyRatingDelta(
 }
 
 export function useUserProfile() {
-  const [profile, setProfile] = useState<UserProfile>(() =>
-    getStoredProfile(),
-  );
+  const [profile, setProfile] = useState<UserProfile>(() => getStoredProfile());
 
   const refresh = useCallback(() => {
     setProfile(getStoredProfile());

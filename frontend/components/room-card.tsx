@@ -6,7 +6,7 @@ import type { Room, getRoomState } from '@/lib/campus';
 
 type RoomCardProps = {
   room: Room;
-  availability: ReturnType<typeof getRoomState>;
+  availability: ReturnType<typeof getRoomState> | null;
   index: number;
   selected: boolean;
   dimmed: boolean;
@@ -30,7 +30,7 @@ export function RoomCard({
       key={room.id}
       className={
         'room room-' +
-        availability.status +
+        (availability?.status ?? 'neutral') +
         (selected ? ' room-selected' : '') +
         (dimmed ? ' room-dimmed' : '') +
         (isBookedByMe ? ' ring-2 ring-urfu-blue ring-offset-2' : '')
@@ -42,7 +42,7 @@ export function RoomCard({
         'Коворкинг ' +
         room.number +
         ', ' +
-        availability.label +
+        (availability?.label ?? 'Выберите дату и время') +
         ', ' +
         room.capacity +
         ' мест' +
@@ -76,7 +76,9 @@ export function RoomCard({
       </span>
       <span className="room-bottom">
         <span className="status-dot" />
-        {isBookedByMe ? 'Ваша бронь' : availability.shortLabel}
+        {isBookedByMe
+          ? 'Ваша бронь'
+          : (availability?.shortLabel ?? 'Выберите дату и время')}
       </span>
     </button>
   );

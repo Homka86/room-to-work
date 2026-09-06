@@ -49,13 +49,12 @@ import { BookingDialog } from '@/components/booking-dialog';
 import { Button } from '@/components/ui/button';
 import { SiteShell } from '@/components/site-shell';
 import { RoomCard } from '@/components/room-card';
-import { RatingPolicy } from '@/components/rating-policy';
 import { MyBookingsDialog } from '@/components/my-bookings-dialog';
 
 export default function Home() {
   const [floor, setFloor] = useState(1);
-  const [date, setDate] = useState(DEMO_DATE);
-  const [time, setTime] = useState(840);
+  const [date, setDate] = useState<string | null>(null);
+  const [time, setTime] = useState<number | null>(null);
   const [view, setView] = useState('map');
   const [onlyFree, setOnlyFree] = useState(false);
   const [selectedId, setSelectedId] = useState(
@@ -68,20 +67,43 @@ export default function Home() {
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
 
-  const { activeBooking, cancel, refresh } = useUserBookings(date, time);
+  const hasAvailabilitySelection = date !== null && time !== null;
+  const availabilityDate = date ?? DEMO_DATE;
+  const availabilityTime = time ?? 840;
+  const { activeBooking, cancel, refresh } = useUserBookings(
+    availabilityDate,
+    availabilityTime,
+  );
   const selected = ROOMS.find((room) => room.id === selectedId)!;
-  const state = getRoomState(selected, date, time);
+  const state = hasAvailabilitySelection
+    ? getRoomState(selected, availabilityDate, availabilityTime)
+    : null;
+  const displayState = state ?? {
+    status: 'neutral' as const,
+    label: 'Выберите дату и время',
+    description: 'Статус коворкинга появится после выбора даты и времени.',
+    availableAt: availabilityTime,
+  };
   const floorRooms = ROOMS.filter((room) => room.floor === floor);
   const counts = { free: 0, soon: 0, busy: 0 };
-  ROOMS.forEach((room) => counts[getRoomState(room, date, time).status]++);
+  if (hasAvailabilitySelection) {
+    ROOMS.forEach(
+      (room) =>
+        counts[getRoomState(room, availabilityDate, availabilityTime).status]++,
+    );
+  }
 
   const isThisRoomBooked = activeBooking?.roomId === selected.id;
-  const permission = evaluateBookingPermission(selected.id, date, time);
+  const permission = evaluateBookingPermission(
+    selected.id,
+    availabilityDate,
+    availabilityTime,
+  );
   const isOtherRoomBooked =
     !permission.allowed && !isThisRoomBooked && Boolean(activeBooking);
 
   useCampusTools(
-    { floor, date, time, selectedId },
+    { floor, date: availabilityDate, time: availabilityTime, selectedId },
     { setFloor, setSelectedId },
   );
 
@@ -104,13 +126,17 @@ export default function Home() {
       ROOMS.find(
         (room) =>
           room.floor === next &&
-          getRoomState(room, date, time).status === 'free',
+          (!hasAvailabilitySelection ||
+            getRoomState(room, availabilityDate, availabilityTime).status ===
+              'free'),
       )?.id ?? ROOMS.find((room) => room.floor === next)!.id,
     );
   }
 
   function renderRoom(room: Room, index: number) {
-    const availability = getRoomState(room, date, time);
+    const availability = hasAvailabilitySelection
+      ? getRoomState(room, availabilityDate, availabilityTime)
+      : null;
     return (
       <RoomCard
         key={room.id}
@@ -118,7 +144,7 @@ export default function Home() {
         index={index}
         availability={availability}
         selected={room.id === selectedId}
-        dimmed={onlyFree && availability.status !== 'free'}
+        dimmed={onlyFree && availability?.status !== 'free'}
         isBookedByMe={activeBooking?.roomId === room.id}
         onSelect={selectRoom}
       />
@@ -144,8 +170,6 @@ export default function Home() {
             </p>
           </div>
         </div>
-
-        <RatingPolicy />
 
         {/* ACTIVE BOOKING BANNER */}
         {activeBooking && (
@@ -202,9 +226,9 @@ export default function Home() {
               <input
                 aria-label="Дата посещения"
                 type="date"
-                value={date}
+                value={date ?? ''}
                 onChange={(event) => {
-                  if (event.target.value) setDate(event.target.value);
+                  setDate(event.target.value || null);
                 }}
               />
             </span>
@@ -213,18 +237,21 @@ export default function Home() {
             <Clock3 size={19} />
             <span className="control-caption">Ко времени</span>
             <Select
-              value={String(time)}
+              value={time !== null ? String(time) : 'empty'}
               onValueChange={(value) => {
-                if (value !== null) setTime(Number(value));
+                setTime(value === 'empty' ? null : Number(value));
               }}
             >
               <SelectTrigger
                 className="time-select"
                 aria-label="Время посещения"
               >
-                <SelectValue>{formatTime(time)}</SelectValue>
+                <SelectValue>
+                  {time === null ? 'Не выбрано' : formatTime(time)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="empty">Не выбрано</SelectItem>
                 {TIME_OPTIONS.map((value) => (
                   <SelectItem key={value} value={String(value)}>
                     {formatTime(value)}
@@ -239,26 +266,37 @@ export default function Home() {
               id="only-free-toggle"
               checked={onlyFree}
               onCheckedChange={setOnlyFree}
+              disabled={!hasAvailabilitySelection}
               aria-label="Только свободные коворкинги"
             />
             <span>Только свободные</span>
           </label>
         </section>
         <div className="availability-overview" aria-live="polite">
-          <span className="overview-label">Во всём кампусе</span>
-          <span className="overview-status free-text">
-            <i />
-            {counts.free} свободно
-          </span>
-          <span className="overview-status soon-text">
-            <i />
-            {counts.soon} скоро заняты
-          </span>
-          <span className="overview-status busy-text">
-            <i />
-            {counts.busy} занято
-          </span>
-          <span className="overview-at">на {formatTime(time)}</span>
+          {hasAvailabilitySelection ? (
+            <>
+              <span className="overview-label">Во всём кампусе</span>
+              <span className="overview-status free-text">
+                <i />
+                {counts.free} свободно
+              </span>
+              <span className="overview-status soon-text">
+                <i />
+                {counts.soon} скоро заняты
+              </span>
+              <span className="overview-status busy-text">
+                <i />
+                {counts.busy} занято
+              </span>
+              <span className="overview-at">
+                на {formatTime(availabilityTime)}
+              </span>
+            </>
+          ) : (
+            <span className="availability-prompt">
+              Выберите дату и время, чтобы увидеть занятость коворкингов
+            </span>
+          )}
         </div>
 
         <div className="main-grid">
@@ -357,7 +395,7 @@ export default function Home() {
                             <span>
                               <ArrowDown size={15} /> Вход на этаж
                             </span>
-                            <span>Условная схема</span>
+                            <span>План этажа</span>
                           </div>
                         </div>
                       </div>
@@ -367,10 +405,21 @@ export default function Home() {
                           .filter(
                             (room) =>
                               !onlyFree ||
-                              getRoomState(room, date, time).status === 'free',
+                              !hasAvailabilitySelection ||
+                              getRoomState(
+                                room,
+                                availabilityDate,
+                                availabilityTime,
+                              ).status === 'free',
                           )
                           .map((room) => {
-                            const current = getRoomState(room, date, time);
+                            const current = hasAvailabilitySelection
+                              ? getRoomState(
+                                  room,
+                                  availabilityDate,
+                                  availabilityTime,
+                                )
+                              : null;
                             const isBookedByMe =
                               activeBooking?.roomId === room.id;
                             return (
@@ -392,7 +441,8 @@ export default function Home() {
                               >
                                 <span
                                   className={
-                                    'list-room-icon room-' + current.status
+                                    'list-room-icon room-' +
+                                    (current?.status ?? 'neutral')
                                   }
                                 >
                                   <DoorOpen size={21} />
@@ -418,13 +468,15 @@ export default function Home() {
                                     'list-status ' +
                                     (isBookedByMe
                                       ? 'free-text'
-                                      : current.status + '-text')
+                                      : (current?.status ?? 'neutral') +
+                                        '-text')
                                   }
                                 >
                                   <i />
                                   {isBookedByMe
                                     ? 'Забронировано вами'
-                                    : current.label}
+                                    : (current?.label ??
+                                      'Выберите дату и время')}
                                 </span>
                                 <ChevronRight size={18} />
                               </button>
@@ -433,7 +485,11 @@ export default function Home() {
                         {onlyFree &&
                           !floorRooms.some(
                             (room) =>
-                              getRoomState(room, date, time).status === 'free',
+                              getRoomState(
+                                room,
+                                availabilityDate,
+                                availabilityTime,
+                              ).status === 'free',
                           ) && (
                             <div className="empty-state">
                               <DoorOpen size={30} />
@@ -449,31 +505,26 @@ export default function Home() {
                           )}
                       </div>
                     )}
-                    <div className="map-legend">
-                      <span>
-                        <i className="legend-free" />
-                        Свободно
-                      </span>
-                      <span>
-                        <i className="legend-soon" />
-                        Займут в течение 30 мин
-                      </span>
-                      <span>
-                        <i className="legend-busy" />
-                        Занято
-                      </span>
-                    </div>
+                    {hasAvailabilitySelection && (
+                      <div className="map-legend">
+                        <span>
+                          <i className="legend-free" />
+                          Свободно
+                        </span>
+                        <span>
+                          <i className="legend-soon" />
+                          Займут в течение 30 мин
+                        </span>
+                        <span>
+                          <i className="legend-busy" />
+                          Занято
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               ))}
             </Tabs>
-            <div className="demo-note">
-              <Info size={16} />
-              <p>
-                Расположение комнат и расписание условные. Коворкинги случайно
-                распределены по трём этажам.
-              </p>
-            </div>
           </section>
 
           <aside
@@ -569,18 +620,20 @@ export default function Home() {
 
               <div
                 id="selected-room-availability-box"
-                className={'availability-box availability-' + state.status}
+                className={
+                  'availability-box availability-' + displayState.status
+                }
               >
                 <span className="availability-icon">
-                  {state.status === 'busy' ? (
+                  {displayState.status === 'busy' ? (
                     <Clock3 size={19} />
                   ) : (
                     <CheckCheck size={19} />
                   )}
                 </span>
                 <div>
-                  <strong>{state.label}</strong>
-                  <span>{state.description}</span>
+                  <strong>{displayState.label}</strong>
+                  <span>{displayState.description}</span>
                 </div>
               </div>
               <div id="room-amenities-list" className="amenities">
@@ -611,89 +664,94 @@ export default function Home() {
                   </span>
                 )}
               </div>
-              <div className="schedule-heading">
-                <h3>Расписание на день</h3>
-                <span>{formatDate(date, true)}</span>
-              </div>
-              <div
-                id="room-timeline-bar"
-                className="timeline"
-                aria-label="Занятость с 8 до 22 часов"
-              >
-                {getSchedule(selected, date).map((booking, index) => (
-                  <span
-                    key={index}
-                    className="timeline-booking"
-                    style={{
-                      left: ((booking.start - 480) / 840) * 100 + '%',
-                      width: ((booking.end - booking.start) / 840) * 100 + '%',
-                    }}
-                    title={
-                      'Занято ' +
-                      formatTime(booking.start) +
-                      '–' +
-                      formatTime(booking.end)
-                    }
-                  />
-                ))}
-                <span
-                  className="timeline-marker"
-                  style={{ left: ((time - 480) / 840) * 100 + '%' }}
-                />
-              </div>
-              <div className="timeline-labels">
-                <span>08:00</span>
-                <span>12:00</span>
-                <span>16:00</span>
-                <span>22:00</span>
-              </div>
-              <div id="room-schedule-list" className="schedule-list">
-                {getSchedule(selected, date)
-                  .filter((booking) => booking.end > time)
-                  .slice(0, 2)
-                  .map((booking, index) => (
-                    <div key={index}>
-                      <span>
-                        <span className="schedule-dot" />
-                        {formatTime(booking.start)} — {formatTime(booking.end)}
-                      </span>
-                      <span>Занято</span>
-                    </div>
-                  ))}
-                {!getSchedule(selected, date).some(
-                  (booking) => booking.end > time,
-                ) && (
-                  <div>
-                    <span className="free-text">Свободно до закрытия</span>
+              {hasAvailabilitySelection ? (
+                <>
+                  <div className="schedule-heading">
+                    <h3>Расписание на день</h3>
+                    <span>{formatDate(availabilityDate, true)}</span>
+                  </div>
+                  <div
+                    id="room-timeline-bar"
+                    className="timeline"
+                    aria-label="Занятость с 8 до 22 часов"
+                  >
+                    {getSchedule(selected, availabilityDate).map(
+                      (booking, index) => (
+                        <span
+                          key={index}
+                          className="timeline-booking"
+                          style={{
+                            left: ((booking.start - 480) / 840) * 100 + '%',
+                            width:
+                              ((booking.end - booking.start) / 840) * 100 + '%',
+                          }}
+                          title={
+                            'Занято ' +
+                            formatTime(booking.start) +
+                            '–' +
+                            formatTime(booking.end)
+                          }
+                        />
+                      ),
+                    )}
+                    <span
+                      className="timeline-marker"
+                      style={{
+                        left: ((availabilityTime - 480) / 840) * 100 + '%',
+                      }}
+                    />
+                  </div>
+                  <div className="timeline-labels">
+                    <span>08:00</span>
+                    <span>12:00</span>
+                    <span>16:00</span>
                     <span>22:00</span>
                   </div>
-                )}
-              </div>
+                  <div id="room-schedule-list" className="schedule-list">
+                    {getSchedule(selected, availabilityDate)
+                      .filter((booking) => booking.end > availabilityTime)
+                      .slice(0, 2)
+                      .map((booking, index) => (
+                        <div key={index}>
+                          <span>
+                            <span className="schedule-dot" />
+                            {formatTime(booking.start)} —{' '}
+                            {formatTime(booking.end)}
+                          </span>
+                          <span>Занято</span>
+                        </div>
+                      ))}
+                    {!getSchedule(selected, availabilityDate).some(
+                      (booking) => booking.end > availabilityTime,
+                    ) && (
+                      <div>
+                        <span className="free-text">Свободно до закрытия</span>
+                        <span>22:00</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="neutral-schedule">
+                  Выберите дату и время, чтобы увидеть расписание
+                </div>
+              )}
 
               {/* PRIMARY ACTION BUTTON */}
               <Button
                 id="choose-coworking-button"
                 type="button"
                 className="choose-button cursor-pointer"
-                disabled={!isThisRoomBooked && state.status === 'busy'}
+                disabled={!isThisRoomBooked && displayState.status === 'busy'}
                 onClick={() => setBookingDialogOpen(true)}
               >
                 {isThisRoomBooked
                   ? 'Управление бронью этого места'
-                  : state.status === 'busy'
-                    ? 'Свободно с ' + formatTime(state.availableAt)
+                  : displayState.status === 'busy'
+                    ? 'Свободно с ' + formatTime(displayState.availableAt)
                     : 'Забронировать'}
-                {state.status !== 'busy' && <ArrowRight size={18} />}
+                {displayState.status !== 'busy' && <ArrowRight size={18} />}
               </Button>
-              <p id="choose-coworking-note" className="choose-note">
-                {isThisRoomBooked
-                  ? 'Бронь активна. Нажмите для просмотра или отмены'
-                  : isOtherRoomBooked
-                    ? 'У вас уже забронировано другое место'
-                    : state.status === 'soon'
-                      ? 'Подойдёт для короткой встречи (скоро занято)'
-                      : 'Забронируйте помещение для индивидуальной или групповой работы'}
-              </p>
             </div>
           </aside>
         </div>
@@ -701,6 +759,7 @@ export default function Home() {
 
       {/* MODAL: BOOKING WORKFLOW */}
       <BookingDialog
+        key={`${selected.id}-${date ?? 'none'}-${time ?? 'none'}`}
         room={selected}
         open={bookingDialogOpen}
         onOpenChange={setBookingDialogOpen}

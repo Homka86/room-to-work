@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -10,12 +11,14 @@ import {
   Clock3,
   DoorOpen,
   Home,
+  Info,
   Layers3,
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RoleSelect } from '@/components/role-select';
 import { useUserProfile } from '@/lib/account';
+import { AdditionalInfoDialog } from '@/components/additional-info-dialog';
 
 type SiteShellProps = {
   children: ReactNode;
@@ -71,7 +74,7 @@ function SiteHeader({
           aria-label="Есть место — главная"
         >
           <strong>Есть место</strong>
-          <span>Коворкинги кампуса</span>
+          <span>Бронирование учебных пространств</span>
         </Link>
         <div className="university-header-actions">
           <RoleSelect
@@ -112,7 +115,10 @@ function SiteHeader({
 function CampusSidebar({
   section,
   onOpenBookings,
-}: Pick<SiteShellProps, 'section' | 'onOpenBookings'>) {
+  onOpenAdditionalInfo,
+}: Pick<SiteShellProps, 'section' | 'onOpenBookings'> & {
+  onOpenAdditionalInfo: () => void;
+}) {
   return (
     <aside className="campus-sidebar" aria-label="Навигация по кампусу">
       <div className="sidebar-panel">
@@ -156,6 +162,14 @@ function CampusSidebar({
               <span>Мои бронирования</span>
             </Link>
           )}
+          <Button
+            variant="ghost"
+            onClick={onOpenAdditionalInfo}
+            className="campus-nav-item"
+          >
+            <Info size={20} />
+            <span>Доп. информация</span>
+          </Button>
           <a
             href="https://istudent.urfu.ru/"
             target="_blank"
@@ -192,6 +206,7 @@ export function SiteShell({
   onOpenBookings,
   bookedRoomNumber,
 }: SiteShellProps) {
+  const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
   return (
     <div id="site-root" className="site-shell">
       <SiteHeader
@@ -199,15 +214,23 @@ export function SiteShell({
         bookedRoomNumber={bookedRoomNumber}
       />
       <div className="university-layout">
-        <CampusSidebar section={section} onOpenBookings={onOpenBookings} />
+        <CampusSidebar
+          section={section}
+          onOpenBookings={onOpenBookings}
+          onOpenAdditionalInfo={() => setAdditionalInfoOpen(true)}
+        />
         {children}
       </div>
       <footer id="site-footer" className="university-footer">
-        <span>Есть место · проект бронирования коворкингов</span>
+        <span>Есть место · бронирование учебных пространств</span>
         <a href="https://istudent.urfu.ru/" target="_blank" rel="noreferrer">
           Личный кабинет студента УрФУ <ArrowUpRight size={14} />
         </a>
       </footer>
+      <AdditionalInfoDialog
+        open={additionalInfoOpen}
+        onOpenChange={setAdditionalInfoOpen}
+      />
     </div>
   );
 }

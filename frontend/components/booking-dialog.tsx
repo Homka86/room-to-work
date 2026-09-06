@@ -28,7 +28,13 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { TIME_OPTIONS, formatTime, formatDate, type Room } from '@/lib/campus';
+import {
+  DEMO_DATE,
+  TIME_OPTIONS,
+  formatTime,
+  formatDate,
+  type Room,
+} from '@/lib/campus';
 import {
   useUserBookings,
   evaluateBookingPermission,
@@ -39,14 +45,13 @@ import {
   POPULAR_PURPOSES,
   type UserBooking,
 } from '@/lib/bookings';
-import { formatRating, isStudentBlocked, useUserProfile } from '@/lib/account';
 
 type BookingDialogProps = {
   room: Room | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedDate: string;
-  selectedTime: number;
+  selectedDate: string | null;
+  selectedTime: number | null;
   onOpenMyBookings?: () => void;
   onSuccess?: (booking: UserBooking) => void;
 };
@@ -60,21 +65,21 @@ export function BookingDialog({
   onOpenMyBookings,
   onSuccess,
 }: BookingDialogProps) {
+  const effectiveDate = selectedDate ?? DEMO_DATE;
+  const effectiveTime = selectedTime ?? 840;
   const { activeBooking, cancel, refresh } = useUserBookings(
-    selectedDate,
-    selectedTime,
+    effectiveDate,
+    effectiveTime,
   );
-  const { profile } = useUserProfile();
-  const isBlocked = isStudentBlocked(profile);
   const cancellationOutcome = activeBooking
-    ? getCancellationOutcome(activeBooking, selectedDate, selectedTime)
+    ? getCancellationOutcome(activeBooking, effectiveDate, effectiveTime)
     : null;
 
   const [userName, setUserName] = useState('');
   const [purpose, setPurpose] = useState('');
   const [customPurpose, setCustomPurpose] = useState('');
-  // Empty slot is at the top and selected by default
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [bookingDate, setBookingDate] = useState(effectiveDate);
+  const [startTime, setStartTime] = useState<number | null>(selectedTime);
   const [endTime, setEndTime] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -87,8 +92,8 @@ export function BookingDialog({
 
   const permission = evaluateBookingPermission(
     room.id,
-    selectedDate,
-    selectedTime,
+    effectiveDate,
+    effectiveTime,
   );
   const isThisRoomBookedByMe = permission.isSameRoomBooked && activeBooking;
   const isAnotherRoomBookedByMe =
@@ -159,7 +164,7 @@ export function BookingDialog({
 
     const result = createNewBooking({
       room,
-      date: selectedDate,
+      date: bookingDate,
       startTime,
       endTime,
       userName,
@@ -194,6 +199,12 @@ export function BookingDialog({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          setBookingDate(effectiveDate);
+          setStartTime(selectedTime);
+          setEndTime(null);
+          setErrorMsg(null);
+        }
         if (!nextOpen) {
           setIsSuccess(false);
           setCreatedBooking(null);
@@ -474,51 +485,50 @@ export function BookingDialog({
               )}
             </div>
           </div>
-        ) : isBlocked ? (
-          <div id="booking-blocked-view" className="flex flex-col gap-4 py-1">
+        ) : permission.blockedByPopularity ? (
+          <div
+            id="booking-popularity-view"
+            className="flex flex-col gap-4 py-1"
+          >
             <div className="flex items-center gap-3 border-b border-[#f5ccd2] pb-4">
               <div className="w-12 h-12 rounded-xl bg-[#fdeef0] text-[#b94a57] flex items-center justify-center shrink-0">
                 <ShieldAlert size={25} />
               </div>
               <div>
                 <DialogTitle
-                  id="booking-blocked-title"
+                  id="booking-popularity-title"
                   className="text-xl font-bold text-foreground m-0"
                 >
-                  Бронирование временно недоступно
+                  Коворкинг сейчас недоступен для вашего рейтинга
                 </DialogTitle>
                 <DialogDescription
-                  id="booking-blocked-desc"
+                  id="booking-popularity-desc"
                   className="text-sm text-muted-foreground m-0"
                 >
-                  Рейтинг ученика достиг критического значения.
+                  Выберите другое учебное пространство или ознакомьтесь с
+                  правилами.
                 </DialogDescription>
               </div>
             </div>
 
-            <div className="bg-[#fff6f7] border border-[#f5ccd2] rounded-xl p-4 text-sm text-[#8f323c] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span>Ваш рейтинг</span>
-                <strong>{formatRating(profile.rating)} баллов</strong>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span>Доступ вернётся</span>
-                <strong>{formatDate(profile.blockedUntil!)}</strong>
+            <div className="bg-accent border border-border rounded-xl p-4 text-sm text-muted-foreground flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-urfu-blue font-semibold">
+                <Info size={17} />
+                <span>{permission.message}</span>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed m-0">
-              За завершённую бронь начисляется +1 балл, за отмену списывается
-              −2. При рейтинге −3 и ниже бронирование блокируется на 7 дней.
+              Доступ к менее востребованным коворкингам остаётся открытым.
             </p>
 
             <button
-              id="booking-blocked-close-button"
+              id="booking-popularity-close-button"
               type="button"
               className="choose-button mt-1"
               onClick={() => onOpenChange(false)}
             >
-              Понятно
+              Выбрать другое пространство
               <Check size={18} />
             </button>
           </div>
@@ -561,12 +571,18 @@ export function BookingDialog({
                 <span className="block text-xs font-medium text-muted-foreground mb-1.5">
                   Дата посещения
                 </span>
-                <div className="flex items-center gap-2.5 h-10 px-3 rounded-lg border border-input bg-muted text-sm text-foreground">
+                <label className="flex items-center gap-2.5 h-10 px-3 rounded-lg border border-input bg-card text-sm text-foreground">
                   <Calendar size={16} className="text-muted-foreground" />
-                  <span className="font-medium">
-                    {formatDate(selectedDate)}
-                  </span>
-                </div>
+                  <input
+                    id="booking-date-input"
+                    aria-label="Дата бронирования"
+                    type="date"
+                    value={bookingDate}
+                    onChange={(event) => setBookingDate(event.target.value)}
+                    className="w-full bg-transparent outline-none font-medium"
+                    required
+                  />
+                </label>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -720,19 +736,6 @@ export function BookingDialog({
                   className="h-10"
                 />
               )}
-            </div>
-
-            {/* Policy note */}
-            <div
-              id="booking-rules-note"
-              className="bg-accent border border-border rounded-lg p-2.5 text-xs text-muted-foreground flex items-center gap-2"
-            >
-              <Info size={15} className="shrink-0 text-urfu-blue" />
-              <span>
-                {profile.role === 'student'
-                  ? `Рейтинг: ${formatRating(profile.rating)}. Завершение +1, одна отмена в месяц бесплатна, отмена более чем за 2 часа без штрафа. Один аккаунт = один активный коворкинг.`
-                  : 'Роль преподавателя: рейтинг не влияет на бронирование. Один аккаунт = один активный коворкинг; один коворкинг = один ответственный.'}
-              </span>
             </div>
 
             {/* Submit button */}

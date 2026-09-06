@@ -1,12 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  DEMO_DATE,
-  formatTime,
-  formatDate,
-  type Room,
-} from '@/lib/campus';
+import { DEMO_DATE, formatTime, formatDate, type Room } from '@/lib/campus';
 import {
   applyRatingDelta,
   CANCEL_BOOKING_PENALTY,
@@ -14,8 +9,12 @@ import {
   consumeFreeCancellation,
   getFreeCancellationsLeft,
   getStoredProfile,
-  isStudentBlocked,
 } from '@/lib/account';
+import {
+  canBookRoomByRating,
+  getPopularityRestrictionMessage,
+  recordRoomPopularity,
+} from '@/lib/popularity';
 
 export type BookingStatus = 'active' | 'completed' | 'cancelled';
 
@@ -79,7 +78,8 @@ export function isBookingExpired(
 ): boolean {
   if (booking.status === 'cancelled') return false;
   if (booking.date < currentDate) return true;
-  if (booking.date === currentDate && booking.endTime <= currentTime) return true;
+  if (booking.date === currentDate && booking.endTime <= currentTime)
+    return true;
   return false;
 }
 
@@ -98,7 +98,10 @@ export function getStoredBookings(
     let changed = false;
 
     const normalized = parsed.map((item) => {
-      if (item.status === 'active' && isBookingExpired(item, currentDate, currentTime)) {
+      if (
+        item.status === 'active' &&
+        isBookingExpired(item, currentDate, currentTime)
+      ) {
         changed = true;
         applyRatingDelta(COMPLETED_BOOKING_REWARD);
         return { ...item, status: 'completed' as const };
@@ -179,16 +182,17 @@ export function evaluateBookingPermission(
   isSameRoomBooked: boolean;
   activeBooking: UserBooking | null;
   blockedByRating?: boolean;
+  blockedByPopularity?: boolean;
   message?: string;
 } {
   const profile = getStoredProfile();
-  if (isStudentBlocked(profile)) {
+  if (!canBookRoomByRating(roomId, profile.rating, profile.role)) {
     return {
       allowed: false,
       isSameRoomBooked: false,
       activeBooking: null,
-      blockedByRating: true,
-      message: `Бронирование заблокировано до ${formatDate(profile.blockedUntil!)} из-за низкого рейтинга (${profile.rating}).`,
+      blockedByPopularity: true,
+      message: getPopularityRestrictionMessage(roomId),
     };
   }
 
@@ -266,7 +270,11 @@ export function createNewBooking({
   }
 
   const newBooking: UserBooking = {
-    id: 'booking_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    id:
+      'booking_' +
+      Date.now() +
+      '_' +
+      Math.random().toString(36).substring(2, 7),
     roomId: room.id,
     roomNumber: room.number,
     roomFloor: room.floor,
@@ -283,6 +291,7 @@ export function createNewBooking({
 
   const existing = getStoredBookings();
   persistBookings([newBooking, ...existing]);
+  recordRoomPopularity(room.id);
 
   return { success: true, booking: newBooking };
 }
@@ -337,7 +346,10 @@ export function formatBookingDuration(start: number, end: number): string {
 /**
  * React hook to synchronize booking state across components and storage events.
  */
-export function useUserBookings(referenceDate = DEMO_DATE, referenceTime = 840) {
+export function useUserBookings(
+  referenceDate = DEMO_DATE,
+  referenceTime = 840,
+) {
   const [bookings, setBookings] = useState<UserBooking[]>(() => {
     return isBrowser() ? getStoredBookings(referenceDate, referenceTime) : [];
   });
@@ -368,11 +380,18 @@ export function useUserBookings(referenceDate = DEMO_DATE, referenceTime = 840) 
     [referenceDate, referenceTime],
   );
 
-  const cancel = useCallback((bookingId: string) => {
-    const res = cancelExistingBooking(bookingId, referenceDate, referenceTime);
-    if (res.success) refresh();
-    return res;
-  }, [refresh, referenceDate, referenceTime]);
+  const cancel = useCallback(
+    (bookingId: string) => {
+      const res = cancelExistingBooking(
+        bookingId,
+        referenceDate,
+        referenceTime,
+      );
+      if (res.success) refresh();
+      return res;
+    },
+    [refresh, referenceDate, referenceTime],
+  );
 
   const cancelActive = useCallback(() => {
     if (!activeBooking) return { success: false, error: 'Нет активной брони.' };

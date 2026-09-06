@@ -7,10 +7,8 @@ import {
   CheckCircle2,
   Clock,
   DoorOpen,
-  GraduationCap,
   History,
-  ShieldAlert,
-  Star,
+  Info,
   Trash2,
   User,
   Users,
@@ -25,7 +23,8 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatDate, formatTime } from '@/lib/campus';
 import { useUserBookings } from '@/lib/bookings';
-import { formatRating, isStudentBlocked, useUserProfile } from '@/lib/account';
+import { AdditionalInfoDialog } from '@/components/additional-info-dialog';
+import { RatingSummary } from '@/components/rating-summary';
 
 type MyBookingsDialogProps = {
   open: boolean;
@@ -45,10 +44,8 @@ export function MyBookingsDialog({
     cancel,
     refresh,
   } = useUserBookings();
-  const { profile } = useUserProfile();
-  const isBlocked = isStudentBlocked(profile);
-
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
 
   const historyBookings = [...completedBookings, ...cancelledBookings].sort(
     (a, b) => b.createdAt.localeCompare(a.createdAt),
@@ -80,57 +77,16 @@ export function MyBookingsDialog({
           </div>
         </div>
 
-        <div
-          id="my-bookings-rating-summary"
-          className={`rounded-xl border p-3.5 flex items-center justify-between gap-3 ${
-            isBlocked
-              ? 'border-[#f5ccd2] bg-[#fff6f7]'
-              : 'border-border bg-accent'
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <div
-              className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                isBlocked
-                  ? 'bg-[#fdeef0] text-[#b94a57]'
-                  : 'bg-accent text-urfu-blue'
-              }`}
-            >
-              {isBlocked ? (
-                <ShieldAlert size={18} />
-              ) : profile.role === 'student' ? (
-                <Star size={18} />
-              ) : (
-                <GraduationCap size={18} />
-              )}
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-urfu-blue">
-                {profile.role === 'student'
-                  ? 'Рейтинг ученика'
-                  : 'Преподаватель'}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                {isBlocked
-                  ? `Блокировка до ${formatDate(profile.blockedUntil!)}`
-                  : profile.role === 'student'
-                    ? 'Завершение +1 · одна отмена в месяц бесплатна · поздняя отмена −2'
-                    : 'Рейтинг не влияет на доступ'}
-              </div>
-            </div>
-          </div>
-
-          <strong
-            className={`text-sm ${isBlocked ? 'text-[#b94a57]' : 'text-urfu-blue'}`}
+        <div className="my-bookings-tools">
+          <RatingSummary compact />
+          <button
+            type="button"
+            className="additional-info-link"
+            onClick={() => setAdditionalInfoOpen(true)}
           >
-            {profile.role === 'student'
-              ? `${formatRating(profile.rating)} баллов`
-              : 'Без ограничений'}
-          </strong>
+            <Info size={15} /> Доп. информация
+          </button>
         </div>
-        <p className="text-[11px] text-muted-foreground m-0">
-          Один аккаунт может отвечать только за один коворкинг в одно время.
-        </p>
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList
@@ -388,6 +344,10 @@ export function MyBookingsDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+      <AdditionalInfoDialog
+        open={additionalInfoOpen}
+        onOpenChange={setAdditionalInfoOpen}
+      />
     </Dialog>
   );
 }
