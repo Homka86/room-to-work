@@ -14,7 +14,7 @@
 
 ## Запуск проекта
 
-Нужны Node.js 22.13+ и pnpm. Для встроенных тестов TypeScript рекомендуется Node.js 22.18+.
+Нужны Node.js 22.13+ и pnpm.
 
 ```sh
 pnpm install

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { SiteShell } from '@/components/site-shell';
-import { AdditionalInfoDialog } from '@/components/additional-info-dialog';
 import { RatingSummary } from '@/components/rating-summary';
 import Link from 'next/link';
 import {
@@ -15,7 +14,6 @@ import {
   Clock,
   DoorOpen,
   History,
-  Info,
   Trash2,
   User,
   Users,
@@ -35,7 +33,6 @@ export default function MyBookingsPage() {
   } = useUserBookings();
 
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
 
   const historyBookings = [...completedBookings, ...cancelledBookings].sort(
     (a, b) => b.createdAt.localeCompare(a.createdAt),
@@ -73,13 +70,6 @@ export default function MyBookingsPage() {
 
         <div className="my-bookings-tools page-rating-tools">
           <RatingSummary compact />
-          <button
-            type="button"
-            className="additional-info-link"
-            onClick={() => setAdditionalInfoOpen(true)}
-          >
-            <Info size={15} /> Доп. информация
-          </button>
         </div>
 
         {/* Tab switcher */}
@@ -205,7 +195,8 @@ export default function MyBookingsPage() {
                               Вместимость коворкинга
                             </div>
                             <div className="text-sm font-semibold text-foreground">
-                              до {activeBooking.roomCapacity} человек
+                              {activeBooking.attendees} из{' '}
+                              {activeBooking.roomCapacity} человек
                             </div>
                           </div>
                         </div>
@@ -411,6 +402,9 @@ export default function MyBookingsPage() {
                               Цель:
                             </span>
                             <span className="font-medium">{item.purpose}</span>
+                            <span className="font-medium block mt-1">
+                              Участники: {item.attendees} из {item.roomCapacity}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -433,10 +427,6 @@ export default function MyBookingsPage() {
           </Tabs>
         </div>
       </main>
-      <AdditionalInfoDialog
-        open={additionalInfoOpen}
-        onOpenChange={setAdditionalInfoOpen}
-      />
     </SiteShell>
   );
 }
