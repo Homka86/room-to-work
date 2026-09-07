@@ -2,10 +2,11 @@
 import { formatTime, type Room } from './campus';
 import { getStoredProfile, getFreeCancellationsLeft } from './account';
 import { getCampusSnapshot, useCampusSnapshot, refreshCampus, mutateCampus } from './campus-store';
+import { BOOKING_PURPOSES } from './purposes';
 export type BookingStatus = 'active' | 'completed' | 'cancelled';
 export type UserBooking = { id: string; roomId: number; roomNumber: string; roomFloor: number; roomKind: string; roomCapacity: number; date: string; startTime: number; endTime: number; attendees: number; userName: string; purpose: string; status: BookingStatus; createdAt: string };
 export type CancellationOutcome = 'early' | 'free_monthly' | 'penalty' | 'teacher';
-export const POPULAR_PURPOSES = ['Командный проект', 'Онлайн-созвон', 'Встреча и обсуждение'];
+export const POPULAR_PURPOSES = BOOKING_PURPOSES;
 export function getCancellationOutcome(booking: UserBooking): CancellationOutcome {
   const profile = getStoredProfile();
   if (profile.role === 'teacher') return 'teacher';

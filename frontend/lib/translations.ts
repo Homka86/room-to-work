@@ -72,7 +72,6 @@ export interface Translation {
   namePlaceholder: string;
   peopleCountLabel: string;
   purposeLabel: string;
-  customPurposePlaceholder: string;
   dateLabel: string;
   startTimeLabel: string;
   endTimeLabel: string;
@@ -177,7 +176,6 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     namePlaceholder: 'Иван Иванов',
     peopleCountLabel: 'Количество человек',
     purposeLabel: 'Цель бронирования',
-    customPurposePlaceholder: 'Укажите вашу цель',
     dateLabel: 'Дата',
     startTimeLabel: 'Время начала',
     endTimeLabel: 'Время окончания',
@@ -290,7 +288,6 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     namePlaceholder: 'e.g. Alex Johnson',
     peopleCountLabel: 'Number of people',
     purposeLabel: 'Booking purpose',
-    customPurposePlaceholder: 'Specify your purpose',
     dateLabel: 'Date',
     startTimeLabel: 'Start time',
     endTimeLabel: 'End time',

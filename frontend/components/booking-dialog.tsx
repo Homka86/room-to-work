@@ -78,7 +78,6 @@ export function BookingDialog({
 
   const [userName, setUserName] = useState('');
   const [purpose, setPurpose] = useState('');
-  const [customPurpose, setCustomPurpose] = useState('');
   const [peopleCount, setPeopleCount] = useState<number | null>(null);
   const [startTime, setStartTime] = useState<number | null>(selectedTime ?? null);
   const [endTime, setEndTime] = useState<number | null>(null);
@@ -182,15 +181,6 @@ export function BookingDialog({
     setEndTime(Number(value));
   }
 
-  const otherPurposeLabel = lang === 'ru' ? 'Другая цель' : 'Other purpose';
-
-  function handlePurposeChange(value: string) {
-    setPurpose(value);
-    if (value !== otherPurposeLabel) {
-      setCustomPurpose('');
-    }
-  }
-
   async function handleBookingSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!room || submitting.current) return;
@@ -234,9 +224,6 @@ export function BookingDialog({
 
     setErrorMsg(null);
 
-    const finalPurpose =
-      purpose === otherPurposeLabel ? customPurpose.trim() : purpose;
-
     submitting.current = true;
     setPending(true);
     const result = await createNewBooking({
@@ -245,7 +232,7 @@ export function BookingDialog({
       startTime,
       endTime,
       userName,
-      purpose: finalPurpose,
+      purpose,
       attendees: peopleCount ?? 1,
     });
 
@@ -286,9 +273,18 @@ export function BookingDialog({
     lang === 'ru'
       ? POPULAR_PURPOSES
       : [
-          'Team project / Meeting',
-          'Online call / Video conference',
-          'Discussion and brainstorming',
+          'Team project',
+          'Online call',
+          'Meeting and discussion',
+          'Individual work',
+          'Exam preparation',
+          'Presentation preparation',
+          'Coursework',
+          'Thesis work',
+          'Academic consultation',
+          'Project meeting',
+          'Brainstorming',
+          'Preparing online materials',
         ];
 
   return (
@@ -312,7 +308,6 @@ export function BookingDialog({
           setCustomBookingDate(null);
           setUserName('');
           setPurpose('');
-          setCustomPurpose('');
           setPeopleCount(null);
         }
         onOpenChange(nextOpen);
@@ -789,7 +784,7 @@ export function BookingDialog({
               <Select
                 value={purpose}
                 onValueChange={(val) => {
-                  if (val) handlePurposeChange(val);
+                  if (val) setPurpose(val);
                 }}
               >
                 <SelectTrigger id="booking-purpose-select" className="w-full h-10 bg-card mb-2">
@@ -803,22 +798,8 @@ export function BookingDialog({
                       {item}
                     </SelectItem>
                   ))}
-                  <SelectItem value={otherPurposeLabel}>{otherPurposeLabel}</SelectItem>
                 </SelectContent>
               </Select>
-
-              {purpose === otherPurposeLabel && (
-                <Input
-                  id="booking-custom-purpose"
-                  type="text"
-                  placeholder={t.customPurposePlaceholder}
-                  value={customPurpose}
-                  onChange={(e) => setCustomPurpose(e.target.value)}
-                  required
-                  maxLength={500}
-                  className="h-10"
-                />
-              )}
             </div>
 
             {/* Submit button */}
@@ -831,7 +812,7 @@ export function BookingDialog({
                 !userName.trim() ||
                 !bookingDate ||
                 peopleCount === null ||
-                (!purpose || (purpose === otherPurposeLabel && !customPurpose.trim())) ||
+                !purpose ||
                 startTime === null ||
                 endTime === null ||
                 endTime - startTime < 30 ||
