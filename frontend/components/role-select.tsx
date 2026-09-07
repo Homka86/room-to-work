@@ -13,10 +13,12 @@ export function RoleSelect({
   id,
   value,
   onChange,
+  labels = { student: 'Ученик', teacher: 'Преподаватель' },
 }: {
   id: string;
   value: UserRole;
   onChange: (role: UserRole) => void;
+  labels?: { student: string; teacher: string };
 }) {
   return (
     <Select
@@ -30,13 +32,13 @@ export function RoleSelect({
         className="role-select"
         aria-label="Роль пользователя"
       >
-        <SelectValue>
-          {value === 'student' ? 'Ученик' : 'Преподаватель'}
-        </SelectValue>
+      <SelectValue>
+          {value === 'student' ? labels.student : labels.teacher}
+      </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="student">Ученик</SelectItem>
-        <SelectItem value="teacher">Преподаватель</SelectItem>
+        <SelectItem value="student">{labels.student}</SelectItem>
+        <SelectItem value="teacher">{labels.teacher}</SelectItem>
       </SelectContent>
     </Select>
   );

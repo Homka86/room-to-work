@@ -8,8 +8,18 @@ export type Room = {
   quiet: boolean;
   monitor: boolean;
 };
-export type RoomStatus = 'free' | 'soon' | 'busy';
+export type RoomStatus = 'free' | 'soon' | 'busy' | 'idle';
 export type Booking = { start: number; end: number };
+export type RoomState = {
+  status: RoomStatus;
+  label: string;
+  shortLabel: string;
+  description: string;
+  availableAt?: number;
+  untilTime?: number;
+  minutesUntilBooking?: number;
+  isFreeAllDay?: boolean;
+};
 export const DEMO_DATE = '2026-09-05';
 export const FLOOR_NAMES = ['Первый этаж', 'Второй этаж', 'Третий этаж'];
 export const TIME_OPTIONS = Array.from({ length: 28 }, (_, i) => 480 + i * 30);
@@ -72,13 +82,13 @@ export function formatTime(minutes: number) {
     String(minutes % 60).padStart(2, '0')
   );
 }
-export function formatDate(date: string, short = false) {
-  return new Intl.DateTimeFormat('ru-RU', {
+export function formatDate(date: string, short = false, locale = 'ru-RU') {
+  return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: short ? 'short' : 'long',
   }).format(new Date(date + 'T12:00:00'));
 }
-export function getRoomState(room: Room, date: string, time: number) {
+export function getRoomState(room: Room, date: string, time: number): RoomState {
   const bookings = getSchedule(room, date);
   const active = bookings.find(
     (booking) => booking.start <= time && booking.end > time,
@@ -90,6 +100,7 @@ export function getRoomState(room: Room, date: string, time: number) {
       shortLabel: 'До ' + formatTime(active.end),
       description: 'Можно прийти после ' + formatTime(active.end),
       availableAt: active.end,
+      untilTime: active.end,
     };
   const next = bookings.find((booking) => booking.start > time);
   if (next && next.start - time <= 30)
@@ -103,6 +114,8 @@ export function getRoomState(room: Room, date: string, time: number) {
         ' мин, до ' +
         formatTime(next.start),
       availableAt: time,
+      untilTime: next.start,
+      minutesUntilBooking: next.start - time,
     };
   return {
     status: 'free' as RoomStatus,
@@ -112,5 +125,52 @@ export function getRoomState(room: Room, date: string, time: number) {
       ? 'Можно занять до ' + formatTime(next.start)
       : 'Можно занять до 22:00',
     availableAt: time,
+    untilTime: next?.start,
+    isFreeAllDay: !next,
   };
+}
+
+/**
+ * Returns a neutral state until the user chooses both date and time.
+ * The daily schedule remains visible in the details panel in that state.
+ */
+export function getRoomAvailability(
+  room: Room,
+  date?: string | null,
+  time?: number | null,
+): RoomState {
+  if (!date && (time === null || time === undefined)) {
+    return {
+      status: 'idle',
+      label: 'Занятость на день',
+      shortLabel: 'Занятость в расписании',
+      description: 'Подробное расписание комнаты показано ниже.',
+    };
+  }
+  if (!date) {
+    return {
+      status: 'idle',
+      label: 'Занятость на день',
+      shortLabel: 'Выберите дату',
+      description: 'Выберите дату, чтобы увидеть актуальный статус.',
+    };
+  }
+  if (time === null || time === undefined) {
+    return {
+      status: 'idle',
+      label: 'Занятость на день',
+      shortLabel: 'Выберите время',
+      description: 'Выберите время, чтобы увидеть актуальный статус.',
+    };
+  }
+  return getRoomState(room, date, time);
+}
+
+export function getUpcomingDays(count = 7, fromDate = DEMO_DATE): string[] {
+  const base = new Date(`${fromDate}T12:00:00`);
+  return Array.from({ length: count }, (_, index) => {
+    const next = new Date(base);
+    next.setDate(base.getDate() + index);
+    return next.toISOString().slice(0, 10);
+  });
 }

@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Есть место — коворкинги кампуса',
+  title: 'Есть место — бронирование учебных пространств',
   description:
-    'Выберите коворкинг на одном из трёх этажей кампуса. 23 пространства для учёбы, встреч и совместной работы.',
+    'Выберите учебное пространство на одном из трёх этажей кампуса. 23 места для учёбы, встреч и совместной работы.',
   icons: { icon: '/favicon.svg' },
 };
 export default function RootLayout({
