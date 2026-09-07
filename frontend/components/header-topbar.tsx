@@ -15,7 +15,6 @@ interface HeaderTopBarProps {
   onOpenMyBookings: () => void;
   onOpenAdditionalInfo: () => void;
   role: UserRole;
-  onRoleChange: (role: UserRole) => void;
 }
 
 export function HeaderTopBar({
@@ -28,7 +27,6 @@ export function HeaderTopBar({
   onOpenMyBookings,
   onOpenAdditionalInfo,
   role,
-  onRoleChange,
 }: HeaderTopBarProps) {
   return (
     <header id="site-topbar" className="topbar">
@@ -46,7 +44,6 @@ export function HeaderTopBar({
         <RoleSelect
           id="header-role-select"
           value={role}
-          onChange={onRoleChange}
           labels={{ student: t.roleStudent, teacher: t.roleTeacher }}
         />
 

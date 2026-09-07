@@ -31,7 +31,7 @@ function SiteHeader({
   onOpenBookings,
   bookedRoomNumber,
 }: Pick<SiteShellProps, 'onOpenBookings' | 'bookedRoomNumber'>) {
-  const { profile, setRole } = useUserProfile();
+  const { profile } = useUserProfile();
   return (
     <>
       <div className="university-strip">
@@ -80,7 +80,6 @@ function SiteHeader({
           <RoleSelect
             id="header-role-select"
             value={profile.role}
-            onChange={setRole}
           />
           {onOpenBookings ? (
             <Button

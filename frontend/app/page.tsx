@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useCampusTools } from '@/hooks/use-campus-tools';
 import { useCampusPreferences } from '@/hooks/use-campus-preferences';
-import { DEMO_DATE, ROOMS, getRoomAvailability, type Room } from '@/lib/campus';
+import { getToday, ROOMS, getRoomAvailability, type Room } from '@/lib/campus';
 import { useUserBookings, evaluateBookingPermission } from '@/lib/bookings';
+import { StorageStatus } from '@/components/storage-status';
 import { useUserProfile } from '@/lib/account';
 import { HeaderTopBar } from '@/components/header-topbar';
 import { ActiveBookingBanner } from '@/components/active-booking-banner';
@@ -18,7 +19,7 @@ import { AdditionalInfoDialog } from '@/components/additional-info-dialog';
 
 export default function Home() {
   const { lang, theme, t, toggleLanguage, toggleTheme } = useCampusPreferences();
-  const { profile, setRole } = useUserProfile();
+  const { profile } = useUserProfile();
   const [floor, setFloor] = useState(1);
   const [date, setDate] = useState<string>('');
   const [time, setTime] = useState<number | null>(null);
@@ -28,13 +29,13 @@ export default function Home() {
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
   const [additionalInfoOpen, setAdditionalInfoOpen] = useState(false);
 
-  const referenceDate = date || DEMO_DATE;
+  const referenceDate = date || getToday();
   const referenceTime = time ?? 840;
-  const { activeBooking, cancel, refresh } = useUserBookings(referenceDate, referenceTime);
+  const { activeBooking, cancel } = useUserBookings(referenceDate, referenceTime);
   const selected: Room = ROOMS.find((room) => room.id === selectedId)!;
   const state = getRoomAvailability(selected, date, time);
-  const isThisRoomBooked = activeBooking?.roomId === selected.id;
-  const permission = evaluateBookingPermission(selected.id, referenceDate, referenceTime);
+  const permission = evaluateBookingPermission(selected.id, date, time);
+  const isThisRoomBooked = permission.isSameRoomBooked;
   const isOtherRoomBooked = !permission.allowed && !isThisRoomBooked && Boolean(activeBooking);
 
   useCampusTools({ floor, date, time: referenceTime, selectedId }, { setFloor, setSelectedId });
@@ -54,9 +55,10 @@ export default function Home() {
     setSelectedId(ROOMS.find((room) => room.floor === next)!.id);
   }
 
-  function handleCancelBooking(bookingId: string) {
-    cancel(bookingId);
-    refresh();
+  const [cancelError, setCancelError] = useState('');
+  async function handleCancelBooking(bookingId: string) {
+    const result = await cancel(bookingId);
+    setCancelError(result.success ? '' : result.error || 'Не удалось отменить бронь.');
   }
 
   return (
@@ -66,7 +68,6 @@ export default function Home() {
         theme={theme}
         t={t}
         role={profile.role}
-        onRoleChange={setRole}
         activeBooking={activeBooking}
         onToggleLanguage={toggleLanguage}
         onToggleTheme={toggleTheme}
@@ -75,6 +76,8 @@ export default function Home() {
       />
 
       <main id="workspace-main" className="workspace">
+        <StorageStatus />
+        {cancelError && <p role="alert" className="text-red-600">{cancelError}</p>}
         <div id="page-heading-block" className="page-heading">
           <div>
             <h1>{t.heading}</h1>
@@ -125,7 +128,7 @@ export default function Home() {
             state={state}
             date={date}
             time={time}
-            activeBooking={activeBooking}
+            activeBooking={permission.activeBooking}
             isThisRoomBooked={isThisRoomBooked}
             isOtherRoomBooked={isOtherRoomBooked}
             t={t}

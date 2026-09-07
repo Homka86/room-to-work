@@ -20,7 +20,7 @@ export type RoomState = {
   minutesUntilBooking?: number;
   isFreeAllDay?: boolean;
 };
-export const DEMO_DATE = '2026-09-05';
+export function getToday() { return new Date(Date.now() + 5 * 3600000).toISOString().slice(0, 10); }
 export const FLOOR_NAMES = ['Первый этаж', 'Второй этаж', 'Третий этаж'];
 export const TIME_OPTIONS = Array.from({ length: 28 }, (_, i) => 480 + i * 30);
 
@@ -52,28 +52,18 @@ export const ROOMS: Room[] = shuffledIds().map((id, index) => ({
   monitor: id % 2 === 0,
 }));
 
-// Replace this demo provider with the availability API when the backend is ready.
+type ScheduleSlot = Booking & { roomId: number; date: string };
+let schedules: ScheduleSlot[] = [];
+let loadedFrom = '';
+export function setScheduleCache(slots: ScheduleSlot[] | null, today = '') {
+  if (slots) schedules = slots;
+  loadedFrom = slots ? today : '';
+}
+export function isScheduleLoaded(date: string) {
+  return Boolean(loadedFrom && date >= loadedFrom && date <= getUpcomingDays(7, loadedFrom)[6]);
+}
 export function getSchedule(room: Room, date: string): Booking[] {
-  const daySeed =
-    Number(date.replaceAll('-', '')) - Number(DEMO_DATE.replaceAll('-', ''));
-  const variant = (((room.id + daySeed) % 3) + 3) % 3;
-  if (variant === 0)
-    return [
-      { start: 540, end: 630 },
-      { start: 720, end: 780 },
-      { start: 960, end: 1050 },
-    ];
-  if (variant === 1)
-    return [
-      { start: 600, end: 660 },
-      { start: 870, end: 930 },
-      { start: 1080, end: 1140 },
-    ];
-  return [
-    { start: 480, end: 540 },
-    { start: 810, end: 900 },
-    { start: 1020, end: 1080 },
-  ];
+  return schedules.filter(slot => slot.roomId === room.id && slot.date === date);
 }
 export function formatTime(minutes: number) {
   return (
@@ -89,6 +79,7 @@ export function formatDate(date: string, short = false, locale = 'ru-RU') {
   }).format(new Date(date + 'T12:00:00'));
 }
 export function getRoomState(room: Room, date: string, time: number): RoomState {
+  if (!isScheduleLoaded(date)) return { status: 'idle', label: 'Расписание обновляется', shortLabel: 'Обновление', description: 'Дождитесь загрузки расписания.' };
   const bookings = getSchedule(room, date);
   const active = bookings.find(
     (booking) => booking.start <= time && booking.end > time,
@@ -166,7 +157,7 @@ export function getRoomAvailability(
   return getRoomState(room, date, time);
 }
 
-export function getUpcomingDays(count = 7, fromDate = DEMO_DATE): string[] {
+export function getUpcomingDays(count = 7, fromDate = getToday()): string[] {
   const base = new Date(`${fromDate}T12:00:00`);
   return Array.from({ length: count }, (_, index) => {
     const next = new Date(base);

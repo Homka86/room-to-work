@@ -2,8 +2,9 @@ import { ArrowRight, CheckCircle2, Info, Trash2 } from 'lucide-react';
 import { RoomPhotoGallery } from './room-photo-gallery';
 import { RoomAmenities } from './room-amenities';
 import {
-  DEMO_DATE,
+  getToday,
   getSchedule,
+  isScheduleLoaded,
   formatDate,
   formatTime,
   type Room,
@@ -39,9 +40,9 @@ export function RoomDetailsSidebar({
   onOpenBookingDialog,
   onCancelBooking,
 }: RoomDetailsSidebarProps) {
-  const availabilityDate = date || DEMO_DATE;
+  const availabilityDate = date || getToday();
   const schedule = getSchedule(room, availabilityDate);
-  const effectiveTime = time ?? 480;
+  const scheduleLoaded = isScheduleLoaded(availabilityDate);
 
   return (
     <aside
@@ -152,7 +153,7 @@ export function RoomDetailsSidebar({
           <span>{formatDate(availabilityDate, true, lang === 'ru' ? 'ru-RU' : 'en-US')}</span>
         </div>
 
-        <div id="room-timeline-bar" className="timeline" aria-label="Занятость с 8 до 22 часов">
+        <div id="room-timeline-bar" className="timeline" style={!scheduleLoaded ? { background: "var(--muted)" } : undefined} aria-label="Занятость с 8 до 22 часов">
           {schedule.map((booking, index) => (
             <span
               key={index}
@@ -185,9 +186,8 @@ export function RoomDetailsSidebar({
         </div>
 
         <div id="room-schedule-list" className="schedule-list">
+          {!scheduleLoaded && <output>{lang === 'ru' ? 'Расписание пока недоступно' : 'Schedule unavailable'}</output>}
           {schedule
-            .filter((booking) => booking.end > effectiveTime)
-            .slice(0, 3)
             .map((booking, index) => (
               <div key={index}>
                 <span>
@@ -197,7 +197,7 @@ export function RoomDetailsSidebar({
                 <span>{t.busy}</span>
               </div>
             ))}
-          {!schedule.some((booking) => booking.end > effectiveTime) && (
+          {scheduleLoaded && !schedule.length && (
             <div>
               <span className="free-text">{t.freeUntilClosing}</span>
               <span>22:00</span>

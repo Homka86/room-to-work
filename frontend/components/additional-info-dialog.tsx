@@ -40,7 +40,7 @@ export function AdditionalInfoDialog({ open, onOpenChange, t }: AdditionalInfoDi
           </section>
           <section>
             <h3><Info size={18} /> {copy?.bookingRulesTitle ?? 'Правила бронирования'}</h3>
-            <p>{copy?.bookingRules ?? 'Один аккаунт может иметь только одну активную бронь одновременно. У каждого пространства на выбранный слот может быть только один ответственный.'}</p>
+            <p>{copy?.bookingRules ?? 'Брони одного аккаунта не могут пересекаться по времени. На разные часы можно забронировать несколько пространств. У каждого пространства на выбранный слот может быть только один ответственный.'}</p>
           </section>
         </div>
         <button type="button" className="choose-button" onClick={() => onOpenChange(false)}>

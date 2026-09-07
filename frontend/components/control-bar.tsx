@@ -8,7 +8,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { formatTime, TIME_OPTIONS, DEMO_DATE, getUpcomingDays } from '@/lib/campus';
+import { formatTime, TIME_OPTIONS, getToday, getUpcomingDays } from '@/lib/campus';
 import type { Translation, Language } from '@/lib/translations';
 
 interface ControlBarProps {
@@ -32,7 +32,7 @@ export function ControlBar({
   onlyFree = false,
   onOnlyFreeChange,
 }: ControlBarProps) {
-  const upcomingDays = useMemo(() => getUpcomingDays(7, DEMO_DATE), []);
+  const upcomingDays = useMemo(() => getUpcomingDays(7, getToday()), []);
 
   const formatDayLabel = (dayStr: string, index: number): string => {
     const d = new Date(dayStr + 'T12:00:00');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -29,9 +29,9 @@ import {
   TIME_OPTIONS,
   formatTime,
   formatDate,
-  DEMO_DATE,
+  getToday,
   getUpcomingDays,
-  getSchedule,
+  isScheduleLoaded,
   type Room,
 } from '@/lib/campus';
 import {
@@ -67,12 +67,12 @@ export function BookingDialog({
   onOpenMyBookings,
   onSuccess,
 }: BookingDialogProps) {
-  const upcomingDays = useMemo(() => getUpcomingDays(7, DEMO_DATE), []);
+  const upcomingDays = useMemo(() => getUpcomingDays(7, getToday()), []);
   const [customBookingDate, setCustomBookingDate] = useState<string | null>(null);
   const bookingDate = customBookingDate !== null ? customBookingDate : (selectedDate || '');
 
-  const { activeBooking, cancel, refresh } = useUserBookings(
-    bookingDate || DEMO_DATE,
+  const { cancel, loading, error: storageError, schedules, serverTime } = useUserBookings(
+    bookingDate || getToday(),
     selectedTime ?? 840,
   );
 
@@ -87,10 +87,11 @@ export function BookingDialog({
   const [createdBooking, setCreatedBooking] = useState<UserBooking | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
+
   // Existing schedule for this room on the chosen date
-  const roomSchedule = useMemo(() => {
-    return room && bookingDate ? getSchedule(room, bookingDate) : [];
-  }, [room, bookingDate]);
+  const roomSchedule = useMemo(() => schedules.filter(slot => slot.roomId === room?.id && slot.date === bookingDate), [schedules, room, bookingDate]);
 
   // Available start times:
   // 1. Campus closing limit: start + 30 <= 1320 (22:00)
@@ -98,14 +99,14 @@ export function BookingDialog({
   // 3. Has at least 30 minutes before the next booking starts
   const availableStartTimes = useMemo(() => {
     return TIME_OPTIONS.filter((st) => {
-      if (st + 30 > 1320) return false;
+      if (st + 30 > 1320 || Date.parse(`${bookingDate}T${formatTime(st)}:00+05:00`) <= serverTime) return false;
       const isInside = roomSchedule.some((b) => b.start <= st && b.end > st);
       if (isInside) return false;
       const overlapsNext = roomSchedule.some((b) => b.start > st && b.start < st + 30);
       if (overlapsNext) return false;
       return true;
     });
-  }, [roomSchedule]);
+  }, [roomSchedule, bookingDate, serverTime]);
 
   // Next booking that begins strictly after the chosen start time
   const nextBookingAfterStart = useMemo(() => {
@@ -139,8 +140,10 @@ export function BookingDialog({
   const permission = evaluateBookingPermission(
     room.id,
     bookingDate,
-    selectedTime ?? 840,
+    startTime,
+    endTime,
   );
+  const activeBooking = permission.activeBooking;
   const isThisRoomBookedByMe = permission.isSameRoomBooked && activeBooking;
   const isAnotherRoomBookedByMe =
     !permission.allowed && !permission.isSameRoomBooked && activeBooking;
@@ -188,9 +191,9 @@ export function BookingDialog({
     }
   }
 
-  function handleBookingSubmit(e: React.SyntheticEvent) {
+  async function handleBookingSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
-    if (!room) return;
+    if (!room || submitting.current) return;
     if (!bookingDate) {
       setErrorMsg(
         lang === 'ru'
@@ -234,7 +237,9 @@ export function BookingDialog({
     const finalPurpose =
       purpose === otherPurposeLabel ? customPurpose.trim() : purpose;
 
-    const result = createNewBooking({
+    submitting.current = true;
+    setPending(true);
+    const result = await createNewBooking({
       room,
       date: bookingDate,
       startTime,
@@ -244,6 +249,8 @@ export function BookingDialog({
       attendees: peopleCount ?? 1,
     });
 
+    submitting.current = false;
+    setPending(false);
     if (!result.success) {
       setErrorMsg(
         result.error ??
@@ -254,7 +261,6 @@ export function BookingDialog({
       return;
     }
 
-    refresh();
     setIsSuccess(true);
     setCreatedBooking(result.booking ?? null);
     if (result.booking && onSuccess) {
@@ -262,9 +268,9 @@ export function BookingDialog({
     }
   }
 
-  function handleCancelBooking() {
+  async function handleCancelBooking() {
     if (!activeBooking) return;
-    const res = cancel(activeBooking.id);
+    const res = await cancel(activeBooking.id);
     if (res.success) {
       setConfirmCancel(false);
       onOpenChange(false);
@@ -289,6 +295,7 @@ export function BookingDialog({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
+        if (pending) return;
         if (nextOpen) {
           setCustomBookingDate(null);
           setStartTime(selectedTime ?? null);
@@ -535,10 +542,7 @@ export function BookingDialog({
                 id="booking-conflict-cancel-prev-button"
                 type="button"
                 className="h-11 w-full rounded-lg border border-[#b94a57] text-[#b94a57] hover:bg-[#fdeef0] dark:hover:bg-[#32171c] font-medium text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                onClick={() => {
-                  cancel(activeBooking.id);
-                  refresh();
-                }}
+                onClick={handleCancelBooking}
               >
                 <Trash2 size={16} />
                 {lang === 'ru'
@@ -811,6 +815,7 @@ export function BookingDialog({
                   value={customPurpose}
                   onChange={(e) => setCustomPurpose(e.target.value)}
                   required
+                  maxLength={500}
                   className="h-10"
                 />
               )}
@@ -822,6 +827,7 @@ export function BookingDialog({
               type="submit"
               className="choose-button mt-1 cursor-pointer"
               disabled={
+                pending || loading || Boolean(storageError) || !isScheduleLoaded(bookingDate) ||
                 !userName.trim() ||
                 !bookingDate ||
                 peopleCount === null ||
@@ -832,7 +838,7 @@ export function BookingDialog({
                 endTime - startTime > 240
               }
             >
-              {t.confirmBookingButton}
+              {pending ? (lang === 'ru' ? 'Сохраняем…' : 'Saving…') : t.confirmBookingButton}
               <ArrowRight size={18} />
             </button>
           </form>
