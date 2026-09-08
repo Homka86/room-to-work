@@ -136,6 +136,33 @@ export function BookingDialog({
     });
   }, [startTime, roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
 
+  // The lists keep times that can be reached by adjusting the other boundary
+  // when necessary. These sets mark the choices that already form a valid
+  // 30-minute–4-hour interval with the currently selected boundary.
+  const highlightedStartTimes = useMemo(() => {
+    if (endTime === null) return new Set<number>();
+    return new Set(
+      availableStartTimes.filter(
+        (start) =>
+          endTime - start >= 30 &&
+          endTime - start <= 240 &&
+          intervalFitsCapacity(roomSchedule, start, endTime, requestedPeople, roomCapacity),
+      ),
+    );
+  }, [availableStartTimes, endTime, roomSchedule, requestedPeople, roomCapacity]);
+
+  const highlightedEndTimes = useMemo(() => {
+    if (startTime === null) return new Set<number>();
+    return new Set(
+      availableEndTimes.filter(
+        (end) =>
+          end - startTime >= 30 &&
+          end - startTime <= 240 &&
+          intervalFitsCapacity(roomSchedule, startTime, end, requestedPeople, roomCapacity),
+      ),
+    );
+  }, [availableEndTimes, startTime, roomSchedule, requestedPeople, roomCapacity]);
+
   const maximumPeople = useMemo(() => {
     if (startTime === null || endTime === null) return roomCapacity;
     return Math.max(0, roomCapacity - getOccupiedSeats(roomSchedule, startTime, endTime));
@@ -730,7 +757,15 @@ export function BookingDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {availableStartTimes.map((val) => (
-                        <SelectItem key={val} value={String(val)} className="select-none cursor-pointer">
+                        <SelectItem
+                          key={val}
+                          value={String(val)}
+                          className={`select-none cursor-pointer ${
+                            highlightedStartTimes.has(val)
+                              ? 'bg-[#f0ecff] text-[#6250c8] font-semibold focus:bg-[#e7e0ff]'
+                              : ''
+                          }`}
+                        >
                           {formatTime(val)}
                         </SelectItem>
                       ))}
@@ -758,7 +793,15 @@ export function BookingDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {availableEndTimes.map((val) => (
-                        <SelectItem key={val} value={String(val)} className="select-none cursor-pointer">
+                        <SelectItem
+                          key={val}
+                          value={String(val)}
+                          className={`select-none cursor-pointer ${
+                            highlightedEndTimes.has(val)
+                              ? 'bg-[#f0ecff] text-[#6250c8] font-semibold focus:bg-[#e7e0ff]'
+                              : ''
+                          }`}
+                        >
                           {formatTime(val)}
                         </SelectItem>
                       ))}
