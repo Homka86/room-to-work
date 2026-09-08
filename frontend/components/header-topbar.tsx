@@ -1,9 +1,8 @@
 import Link from 'next/link';
-import { DoorOpen, Globe, Moon, Sun, Bookmark, Info } from 'lucide-react';
-import type { Language, Translation } from '@/lib/translations';
+import { DoorOpen, Globe, Moon, Sun, Info, UserRound } from 'lucide-react';
+import { getRoomCode, type Language, type Translation } from '@/lib/translations';
 import type { UserBooking } from '@/lib/bookings';
 import type { UserRole } from '@/lib/account';
-import { RoleSelect } from '@/components/role-select';
 
 interface HeaderTopBarProps {
   lang: Language;
@@ -12,9 +11,10 @@ interface HeaderTopBarProps {
   activeBooking?: UserBooking | null;
   onToggleLanguage: () => void;
   onToggleTheme: () => void;
-  onOpenMyBookings: () => void;
+  onOpenMyBookings?: () => void;
+  onOpenUser?: () => void;
   onOpenAdditionalInfo: () => void;
-  role: UserRole;
+  role?: UserRole;
 }
 
 export function HeaderTopBar({
@@ -25,56 +25,22 @@ export function HeaderTopBar({
   onToggleLanguage,
   onToggleTheme,
   onOpenMyBookings,
+  onOpenUser,
   onOpenAdditionalInfo,
-  role,
 }: HeaderTopBarProps) {
+  const handleOpenUser = onOpenUser || onOpenMyBookings || (() => {});
+
   return (
     <header id="site-topbar" className="topbar">
       <Link id="brand-logo-link" href="/" className="brand" aria-label={t.brand}>
         <span className="brand-icon">
           <DoorOpen size={24} strokeWidth={2.4} />
         </span>
-        <span>
-          {t.brand}
-          <span className="brand-dot">.</span>
-        </span>
+        <span>{t.brand}</span>
       </Link>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-        <RoleSelect
-          id="header-role-select"
-          value={role}
-          labels={{ student: t.roleStudent, teacher: t.roleTeacher }}
-        />
-
-        <button
-          id="header-additional-info-button"
-          type="button"
-          onClick={onOpenAdditionalInfo}
-          className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
-          title={t.additionalInfo}
-          aria-label={t.additionalInfo}
-        >
-          <Info size={17} />
-        </button>
-
-        {/* Language icon button */}
-        <button
-          id="header-language-toggle"
-          type="button"
-          onClick={onToggleLanguage}
-          className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
-          title={`${t.languageSwitch} (${lang.toUpperCase()})`}
-          aria-label={`${t.languageSwitch}: ${lang.toUpperCase()}`}
-        >
-          <Globe size={17} />
-          <span className="sr-only">{lang.toUpperCase()}</span>
-          <span className="absolute -bottom-1 -right-1 text-[9px] font-extrabold uppercase px-1 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 leading-none">
-            {lang}
-          </span>
-        </button>
-
-        {/* Theme icon button */}
+        {/* 1. Theme switch button */}
         <button
           id="header-theme-toggle"
           type="button"
@@ -90,25 +56,53 @@ export function HeaderTopBar({
           )}
         </button>
 
-        {/* My Bookings icon button */}
+        {/* 2. Language switch button */}
         <button
-          id="header-my-bookings-button"
+          id="header-language-toggle"
           type="button"
-          onClick={onOpenMyBookings}
-          className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[#dfd6f2] dark:border-[#383353] bg-[#fbf9fe] dark:bg-[#232036] text-[#7560da] dark:text-[#a896f6] hover:bg-[#f3edf9] dark:hover:bg-[#2a2642] transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
+          onClick={onToggleLanguage}
+          className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
+          title={`${t.languageSwitch} (${lang.toUpperCase()})`}
+          aria-label={`${t.languageSwitch}: ${lang.toUpperCase()}`}
+        >
+          <Globe size={17} />
+          <span className="sr-only">{lang.toUpperCase()}</span>
+          <span className="absolute -bottom-1 -right-1 text-[9px] font-extrabold uppercase px-1 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 leading-none">
+            {lang}
+          </span>
+        </button>
+
+        {/* 3. Additional info button */}
+        <button
+          id="header-additional-info-button"
+          type="button"
+          onClick={onOpenAdditionalInfo}
+          className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
+          title={t.additionalInfo}
+          aria-label={t.additionalInfo}
+        >
+          <Info size={17} />
+        </button>
+
+        {/* 4. User profile & bookings button */}
+        <button
+          id="header-user-button"
+          type="button"
+          onClick={handleOpenUser}
+          className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
           title={
             activeBooking
-              ? `${t.myBookings} (К${activeBooking.roomNumber})`
-              : t.myBookings
+              ? `${t.user} (${getRoomCode(activeBooking.roomNumber, lang)})`
+              : t.user
           }
-          aria-label={t.myBookings}
+          aria-label={t.user}
         >
-          <Bookmark size={17} />
+          <UserRound size={17} />
           {activeBooking ? (
             <span
               id="header-active-booking-pill"
               className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse"
-              title={`${t.bookedByMe}: К${activeBooking.roomNumber}`}
+              title={`${t.bookedByMe}: ${getRoomCode(activeBooking.roomNumber, lang)}`}
             />
           ) : null}
         </button>

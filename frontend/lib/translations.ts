@@ -1,8 +1,16 @@
 export type Language = 'ru' | 'en';
 
+export function getRoomCode(roomNumber: string | number, lang: Language = 'ru'): string {
+  const prefix = lang === 'ru' ? 'К' : 'C';
+  return `${prefix}${roomNumber}`;
+}
+
 export interface Translation {
   brand: string;
   brandSubtitle: string;
+  user: string;
+  userProfile: string;
+  roomCodePrefix: string;
   myBookings: string;
   additionalInfo: string;
   additionalInfoDescription: string;
@@ -104,6 +112,9 @@ export const TRANSLATIONS: Record<Language, Translation> = {
   ru: {
     brand: 'есть место',
     brandSubtitle: 'бронирование учебных пространств',
+    user: 'Пользователь',
+    userProfile: 'Профиль пользователя',
+    roomCodePrefix: 'К',
     myBookings: 'Мои бронирования',
     additionalInfo: 'Доп. информация',
     additionalInfoDescription: 'Как работает рейтинг и доступ к пространствам',
@@ -173,7 +184,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     bookingDialogTitle: 'Бронирование места',
     bookingDialogSubtitle: 'Заполните данные для резервирования места',
     nameLabel: 'Ваше имя и фамилия',
-    namePlaceholder: 'Иван Иванов',
+    namePlaceholder: 'Например, Иван Иванов',
     peopleCountLabel: 'Количество человек',
     purposeLabel: 'Цель бронирования',
     dateLabel: 'Дата',
@@ -216,6 +227,9 @@ export const TRANSLATIONS: Record<Language, Translation> = {
   en: {
     brand: 'room to work',
     brandSubtitle: 'booking for study spaces',
+    user: 'User',
+    userProfile: 'User profile',
+    roomCodePrefix: 'C',
     myBookings: 'My Bookings',
     additionalInfo: 'More information',
     additionalInfoDescription: 'How ratings and access to spaces work',

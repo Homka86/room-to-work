@@ -29,7 +29,7 @@ interface RoomDetailsSidebarProps {
 
 export function RoomDetailsSidebar({
   room,
-  state,
+  state: _state,
   date,
   time,
   activeBooking,
@@ -66,18 +66,6 @@ export function RoomDetailsSidebar({
         <div className="detail-kind">
           {t.kinds[room.kind as keyof typeof t.kinds] || room.kind}
         </div>
-
-        {date && time !== null && (
-          <div className={`availability-box availability-${state.status} mb-4`}>
-            <span className="availability-icon">
-              <CheckCircle2 size={18} />
-            </span>
-            <div>
-              <strong>{state.label}</strong>
-              <span>{state.description}</span>
-            </div>
-          </div>
-        )}
 
         {/* SPECIAL NOTICE: ROOM ALREADY BOOKED BY ME */}
         {isThisRoomBooked && activeBooking && (

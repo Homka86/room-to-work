@@ -1,5 +1,5 @@
 import { database } from '@/server/database';
-import { ApiError, currentUser, startSession, snapshot, book, cancel } from '@/server/campus-service';
+import { ApiError, currentUser, startSession, snapshot, book, cancel, setRole } from '@/server/campus-service';
 export const dynamic = 'force-dynamic';
 function json(body: unknown, status = 200, headers: Record<string,string> = {}) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'Vary': 'Cookie', ...headers } });
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     if (!user) throw new ApiError(401, 'Сессия истекла. Обновите страницу.');
     if (input.action === 'book') return json({ success: true, booking: await book(db,user,input,now) });
     if (input.action === 'cancel') return json({ success: true, ...await cancel(db,user,input.id,now) });
+    if (input.action === 'set_role') return json({ success: true, ...await setRole(db,user,input.role) });
     throw new ApiError(400, 'Неизвестное действие.');
   } catch (error) { return failure(error); }
 }

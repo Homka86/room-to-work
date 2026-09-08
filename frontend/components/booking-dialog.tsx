@@ -10,6 +10,7 @@ import {
   DoorOpen,
   Info,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   Dialog,
@@ -42,7 +43,7 @@ import {
   POPULAR_PURPOSES,
   type UserBooking,
 } from '@/lib/bookings';
-import { type Translation, type Language, TRANSLATIONS } from '@/lib/translations';
+import { type Translation, type Language, TRANSLATIONS, getRoomCode } from '@/lib/translations';
 
 type BookingDialogProps = {
   room: Room | null;
@@ -133,6 +134,60 @@ export function BookingDialog({
     }
     return times;
   }, [startTime, nextBookingAfterStart]);
+
+  const formatBookingDateOption = (dayStr: string): string => {
+    const d = new Date(dayStr + 'T12:00:00');
+    const dayNum = d.getDate();
+    const monthsRu = [
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
+      'мая',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
+    ];
+    const monthsEn = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const weekDaysRu = [
+      'Воскресенье',
+      'Понедельник',
+      'Вторник',
+      'Среда',
+      'Четверг',
+      'Пятница',
+      'Суббота',
+    ];
+    const weekDaysEn = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    const m = lang === 'ru' ? monthsRu[d.getMonth()] : monthsEn[d.getMonth()];
+    const wd = lang === 'ru' ? weekDaysRu[d.getDay()] : weekDaysEn[d.getDay()];
+    return `${wd}, ${dayNum} ${m}`;
+  };
 
   if (!room) return null;
 
@@ -314,8 +369,8 @@ export function BookingDialog({
       }}
     >
       <DialogContent
-        className="confirmation-dialog max-w-[500px] w-full p-6 sm:p-7 overflow-y-auto max-h-[90vh]"
-        showCloseButton={true}
+        className="confirmation-dialog w-[95vw] sm:max-w-[540px] p-6 sm:p-7 overflow-y-auto overflow-x-hidden max-h-[90vh]"
+        showCloseButton={false}
       >
         {/* Success View */}
         {isSuccess && createdBooking ? (
@@ -514,7 +569,7 @@ export function BookingDialog({
             <div id="booking-conflict-details-card" className="bg-[#fff9ea] border border-[#f5e3b5] rounded-xl p-4 text-sm flex flex-col gap-2 text-[#795411]">
               <div className="font-semibold flex items-center gap-1.5">
                 <DoorOpen size={16} />
-                {lang === 'ru' ? 'Текущая бронь:' : 'Current reservation:'} {activeBooking.roomNumber} (
+                {lang === 'ru' ? 'Текущая бронь:' : 'Current reservation:'} {activeBooking.roomNumber} ({getRoomCode(activeBooking.roomNumber, lang)},{' '}
                 {activeBooking.roomFloor} {t.floorWord})
               </div>
               <div className="text-xs text-[#8f6d2b]">
@@ -528,27 +583,24 @@ export function BookingDialog({
 
             <div className="text-xs text-[#7d798a] leading-relaxed">
               {lang === 'ru'
-                ? `Чтобы забронировать коворкинг ${room.number}, сначала отмените текущую бронь.`
-                : `To reserve workspace ${room.number}, please cancel your current reservation first.`}
+                ? `Чтобы забронировать коворкинг ${room.number} (${getRoomCode(room.number, lang)}), сначала отмените текущую бронь.`
+                : `To reserve workspace ${room.number} (${getRoomCode(room.number, lang)}), please cancel your current reservation first.`}
             </div>
 
-            <div className="flex flex-col gap-2 pt-2">
+            <div className="grid grid-cols-2 gap-3 pt-2 w-full">
               <button
-                id="booking-conflict-cancel-prev-button"
+                id="booking-conflict-close-button"
                 type="button"
-                className="h-11 w-full rounded-lg border border-[#b94a57] text-[#b94a57] hover:bg-[#fdeef0] dark:hover:bg-[#32171c] font-medium text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                onClick={handleCancelBooking}
+                className="choose-button cursor-pointer flex items-center justify-center gap-2 w-full"
+                onClick={() => onOpenChange(false)}
               >
-                <Trash2 size={16} />
-                {lang === 'ru'
-                  ? `Отменить бронь коворкинга ${activeBooking.roomNumber}`
-                  : `Cancel reservation for coworking ${activeBooking.roomNumber}`}
+                {t.close} <X size={17} />
               </button>
-              {onOpenMyBookings && (
+              {onOpenMyBookings ? (
                 <button
                   id="booking-conflict-goto-mybookings-button"
                   type="button"
-                  className="choose-button cursor-pointer"
+                  className="choose-button cursor-pointer flex items-center justify-center gap-2 w-full"
                   onClick={() => {
                     onOpenChange(false);
                     onOpenMyBookings();
@@ -556,6 +608,18 @@ export function BookingDialog({
                 >
                   {t.goToMyBookings}
                   <ArrowRight size={16} />
+                </button>
+              ) : (
+                <button
+                  id="booking-conflict-cancel-prev-button"
+                  type="button"
+                  className="h-11 w-full rounded-lg border border-[#b94a57] text-[#b94a57] hover:bg-[#fdeef0] dark:hover:bg-[#32171c] font-medium text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={handleCancelBooking}
+                >
+                  <Trash2 size={16} />
+                  {lang === 'ru'
+                    ? `Отменить бронь`
+                    : `Cancel reservation`}
                 </button>
               )}
             </div>
@@ -586,38 +650,30 @@ export function BookingDialog({
             {/* Date & Time fields */}
             <div className="flex flex-col gap-3">
               <div>
-                <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5">
+                <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5 select-none">
                   {t.dateLabel}
                 </span>
                 <Select
-                  value={bookingDate || 'empty'}
+                  value={bookingDate || null}
                   onValueChange={(val) => {
-                    if (val === 'empty' || !val) {
-                      setCustomBookingDate('');
-                    } else {
+                    if (val) {
                       setCustomBookingDate(val);
+                      setStartTime(null);
+                      setEndTime(null);
                     }
-                    setStartTime(null);
-                    setEndTime(null);
                   }}
                 >
-                  <SelectTrigger id="booking-date-select" className="w-full h-10 bg-card">
+                  <SelectTrigger id="booking-date-select" className="w-full h-10 bg-card select-none cursor-pointer">
                     <SelectValue placeholder={t.selectDatePrompt}>
-                      <div className="flex items-center gap-2">
-                        <Calendar size={15} className="text-[#8e879f]" />
-                        <span className={bookingDate ? '' : 'text-muted-foreground'}>
-                          {bookingDate ? formatDate(bookingDate) : t.selectDatePrompt}
-                        </span>
-                      </div>
+                      <span className={`select-none ${bookingDate ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                        {bookingDate ? formatBookingDateOption(bookingDate) : t.selectDatePrompt}
+                      </span>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="empty">
-                      {t.selectDatePrompt}
-                    </SelectItem>
                     {upcomingDays.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {formatDate(d)}
+                      <SelectItem key={d} value={d} className="select-none cursor-pointer">
+                        {formatBookingDateOption(d)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -626,28 +682,25 @@ export function BookingDialog({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5">
+                  <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5 select-none">
                     {t.startTimeLabel}
                   </span>
                   <Select
-                    value={startTime !== null ? String(startTime) : 'empty'}
+                    value={startTime !== null ? String(startTime) : null}
                     onValueChange={(val) => {
                       if (val) handleStartTimeChange(val);
                     }}
                   >
-                    <SelectTrigger id="booking-start-time-select" className="w-full h-10 bg-card">
+                    <SelectTrigger id="booking-start-time-select" className="w-full h-10 bg-card select-none cursor-pointer">
                       <SelectValue placeholder={t.selectTimePrompt}>
-                        <span className={startTime !== null ? '' : 'text-muted-foreground'}>
+                        <span className={`select-none ${startTime !== null ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                           {startTime !== null ? formatTime(startTime) : t.selectTimePrompt}
                         </span>
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="empty">
-                        {t.selectTimePrompt}
-                      </SelectItem>
                       {availableStartTimes.map((val) => (
-                        <SelectItem key={val} value={String(val)}>
+                        <SelectItem key={val} value={String(val)} className="select-none cursor-pointer">
                           {formatTime(val)}
                         </SelectItem>
                       ))}
@@ -656,29 +709,26 @@ export function BookingDialog({
                 </div>
 
                 <div>
-                  <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5">
+                  <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5 select-none">
                     {t.endTimeLabel}
                   </span>
                   <Select
-                    value={endTime !== null ? String(endTime) : 'empty'}
+                    value={endTime !== null ? String(endTime) : null}
                     onValueChange={(val) => {
                       if (val) handleEndTimeChange(val);
                     }}
                     disabled={startTime === null}
                   >
-                    <SelectTrigger id="booking-end-time-select" className="w-full h-10 bg-card">
+                    <SelectTrigger id="booking-end-time-select" className="w-full h-10 bg-card select-none cursor-pointer">
                       <SelectValue placeholder={t.selectTimePrompt}>
-                        <span className={endTime !== null ? '' : 'text-muted-foreground'}>
+                        <span className={`select-none ${endTime !== null ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                           {endTime !== null ? formatTime(endTime) : t.selectTimePrompt}
                         </span>
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="empty">
-                        {t.selectTimePrompt}
-                      </SelectItem>
                       {availableEndTimes.map((val) => (
-                        <SelectItem key={val} value={String(val)}>
+                        <SelectItem key={val} value={String(val)} className="select-none cursor-pointer">
                           {formatTime(val)}
                         </SelectItem>
                       ))}
@@ -689,11 +739,11 @@ export function BookingDialog({
 
               {/* Duration and helper info */}
               {!bookingDate ? (
-                <p id="booking-date-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1">
+                <p id="booking-date-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1 select-none">
                   {lang === 'ru' ? 'Сначала выберите дату.' : 'Please select a date first.'}
                 </p>
               ) : startTime !== null && endTime !== null && endTime > startTime ? (
-                <div id="booking-duration-hint" className="text-xs text-[#7560da] font-medium flex items-center justify-between -mt-1 px-1">
+                <div id="booking-duration-hint" className="text-xs text-[#7560da] font-medium flex items-center justify-between -mt-1 px-1 select-none">
                   <span className="flex items-center gap-1.5">
                     <Clock size={13} />
                     <span>
@@ -706,7 +756,7 @@ export function BookingDialog({
                   </span>
                 </div>
               ) : (
-                <p id="booking-time-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1">
+                <p id="booking-time-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1 select-none">
                   {startTime === null
                     ? lang === 'ru'
                       ? 'Сначала выберите время начала.'
@@ -720,24 +770,32 @@ export function BookingDialog({
 
             {/* People count selector */}
             <div>
-              <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5">
+              <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5 select-none">
                 {t.peopleCountLabel}
               </span>
               <Select
-                value={peopleCount !== null ? String(peopleCount) : 'empty'}
+                value={peopleCount !== null ? String(peopleCount) : null}
                 onValueChange={(val) => {
-                  if (val === 'empty' || !val) {
-                    setPeopleCount(null);
-                  } else {
+                  if (val) {
                     setPeopleCount(Number(val));
                   }
                 }}
               >
-                <SelectTrigger id="booking-people-count-select" className="w-full h-10 bg-card">
+                <SelectTrigger id="booking-people-count-select" className="w-full h-10 bg-card select-none cursor-pointer">
                   <SelectValue placeholder={lang === 'ru' ? 'Выберите количество' : 'Select count'}>
-                    <span className={peopleCount !== null ? '' : 'text-muted-foreground'}>
+                    <span className={`select-none ${peopleCount !== null ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                       {peopleCount !== null
-                        ? peopleCount
+                        ? `${peopleCount} ${
+                            lang === 'ru'
+                              ? peopleCount === 1
+                                ? 'человек'
+                                : peopleCount < 5
+                                ? 'человека'
+                                : 'человек'
+                              : peopleCount === 1
+                              ? 'person'
+                              : 'people'
+                          }`
                         : lang === 'ru'
                         ? 'Выберите количество'
                         : 'Select count'}
@@ -745,12 +803,20 @@ export function BookingDialog({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="empty">
-                    {lang === 'ru' ? 'Выберите количество' : 'Select count'}
-                  </SelectItem>
                   {Array.from({ length: Math.max(room.capacity, 1) }, (_, i) => i + 1).map((cnt) => (
-                    <SelectItem key={cnt} value={String(cnt)}>
-                      <span>{cnt}</span>
+                    <SelectItem key={cnt} value={String(cnt)} className="select-none cursor-pointer">
+                      <span>
+                        {cnt}{' '}
+                        {lang === 'ru'
+                          ? cnt === 1
+                            ? 'человек'
+                            : cnt < 5
+                            ? 'человека'
+                            : 'человек'
+                          : cnt === 1
+                          ? 'person'
+                          : 'people'}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -768,7 +834,7 @@ export function BookingDialog({
               <Input
                 id="booking-user-name"
                 type="text"
-                placeholder={t.namePlaceholder || (lang === 'ru' ? 'Иван Иванов' : 'Alex Johnson')}
+                placeholder={t.namePlaceholder || (lang === 'ru' ? 'Например, Иван Иванов' : 'e.g. Alex Johnson')}
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
                 required
@@ -782,7 +848,7 @@ export function BookingDialog({
                 {t.purposeLabel}
               </span>
               <Select
-                value={purpose}
+                value={purpose || null}
                 onValueChange={(val) => {
                   if (val) setPurpose(val);
                 }}
@@ -802,26 +868,36 @@ export function BookingDialog({
               </Select>
             </div>
 
-            {/* Submit button */}
-            <button
-              id="booking-submit-button"
-              type="submit"
-              className="choose-button mt-1 cursor-pointer"
-              disabled={
-                pending || loading || Boolean(storageError) || !isScheduleLoaded(bookingDate) ||
-                !userName.trim() ||
-                !bookingDate ||
-                peopleCount === null ||
-                !purpose ||
-                startTime === null ||
-                endTime === null ||
-                endTime - startTime < 30 ||
-                endTime - startTime > 240
-              }
-            >
-              {pending ? (lang === 'ru' ? 'Сохраняем…' : 'Saving…') : t.confirmBookingButton}
-              <ArrowRight size={18} />
-            </button>
+            {/* Action buttons: Close & Submit (each takes 50% width) */}
+            <div className="grid grid-cols-2 gap-3 mt-1 w-full">
+              <button
+                id="booking-cancel-modal-button"
+                type="button"
+                className="choose-button cursor-pointer flex items-center justify-center gap-2 w-full"
+                onClick={() => onOpenChange(false)}
+              >
+                {t.close} <X size={17} />
+              </button>
+              <button
+                id="booking-submit-button"
+                type="submit"
+                className="choose-button cursor-pointer flex items-center justify-center gap-2 w-full"
+                disabled={
+                  pending || loading || Boolean(storageError) || !isScheduleLoaded(bookingDate) ||
+                  !userName.trim() ||
+                  !bookingDate ||
+                  peopleCount === null ||
+                  !purpose ||
+                  startTime === null ||
+                  endTime === null ||
+                  endTime - startTime < 30 ||
+                  endTime - startTime > 240
+                }
+              >
+                {pending ? (lang === 'ru' ? 'Сохраняем…' : 'Saving…') : t.confirmBookingButton}
+                <ArrowRight size={18} />
+              </button>
+            </div>
           </form>
         )}
       </DialogContent>

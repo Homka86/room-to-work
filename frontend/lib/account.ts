@@ -1,5 +1,5 @@
 'use client';
-import { getCampusSnapshot, useCampusSnapshot, refreshCampus } from './campus-store';
+import { getCampusSnapshot, useCampusSnapshot, refreshCampus, mutateCampus } from './campus-store';
 export type UserRole = 'student' | 'teacher';
 export type UserProfile = { role: UserRole; rating: number; blockedUntil: string | null; freeCancellationsUsed: number; freeCancellationMonth: string };
 export const INITIAL_RATING = 0;
@@ -12,7 +12,11 @@ export function getFreeCancellationsLeft(profile = getStoredProfile(), now = new
   const month = new Date(now.getTime() + 5 * 3600000).toISOString().slice(0,7);
   return profile.freeCancellationMonth !== month ? 1 : Math.max(0, 1 - profile.freeCancellationsUsed);
 }
+export async function setUserRole(role: UserRole) {
+  return mutateCampus({ action: 'set_role', role });
+}
 export function useUserProfile() {
   const { profile } = useCampusSnapshot();
-  return { profile, refresh: refreshCampus };
+  return { profile, refresh: refreshCampus, setRole: setUserRole };
 }
+

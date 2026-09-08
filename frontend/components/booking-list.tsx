@@ -1,35 +1,231 @@
 'use client';
+
 import { useState } from 'react';
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  DoorOpen,
+  FileText,
+  MapPin,
+  Trash2,
+  UserRound,
+  Users,
+  XCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatTime } from '@/lib/campus';
-import { useUserBookings, getCancellationMessage, getCancellationOutcome, type UserBooking } from '@/lib/bookings';
-import type { Language, Translation } from '@/lib/translations';
+import {
+  useUserBookings,
+  getCancellationMessage,
+  getCancellationOutcome,
+  type UserBooking,
+} from '@/lib/bookings';
+import { getRoomCode, type Language, type Translation } from '@/lib/translations';
 
-export function BookingList({ bookings, lang, t, onSelectRoom }: { bookings: UserBooking[]; lang: Language; t: Translation; onSelectRoom?: (id: number) => void }) {
+interface BookingListProps {
+  bookings: UserBooking[];
+  lang: Language;
+  t: Translation;
+  onSelectRoom?: (id: number) => void;
+}
+
+export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProps) {
   const { cancel } = useUserBookings();
-  const [confirm, setConfirm] = useState<string | null>(null);
-  const [pending, setPending] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState('');
-  async function cancelBooking(id: string) {
-    if (pending) return;
-    setPending(id); setError('');
+
+  async function handleCancel(id: string) {
+    if (pendingId) return;
+    setPendingId(id);
+    setError('');
     const result = await cancel(id);
-    setPending(null);
-    if (result.success) setConfirm(null);
-    else setError(result.error || 'Не удалось отменить бронь.');
+    setPendingId(null);
+    if (result.success) {
+      setConfirmId(null);
+    } else {
+      setError(result.error || (lang === 'ru' ? 'Не удалось отменить бронь.' : 'Failed to cancel reservation.'));
+    }
   }
-  return <div className="grid gap-3">
-    {error && <p role="alert" className="text-red-600 text-sm">{error}</p>}
-    {bookings.map(item => <article key={item.id} className="rounded-xl border border-border bg-card p-4">
-      <div className="flex justify-between items-start gap-3"><strong>{t.coworking} {item.roomNumber}</strong><span className="text-xs text-muted-foreground">{item.status === 'active' ? t.active : item.status === 'completed' ? t.completed : t.cancelled}</span></div>
-      <p className="text-sm my-2">{formatDate(item.date, false, lang === 'ru' ? 'ru-RU' : 'en-US')} · {formatTime(item.startTime)} — {formatTime(item.endTime)}</p>
-      <p className="text-xs text-muted-foreground">{item.roomFloor} {t.floorWord} · {item.attendees} / {item.roomCapacity} {t.seats} · {item.userName}</p>
-      <p className="text-sm my-2">{t.purpose}: {item.purpose}</p>
-      {item.status === 'active' && (confirm === item.id ? <div className="rounded-lg bg-muted p-3">
-        <p className="text-sm mb-2">{t.confirmCancel}</p>
-        <p className="text-xs mb-3">{lang === 'ru' ? getCancellationMessage(getCancellationOutcome(item)) : ({early: 'More than 2 hours before the start: no penalty or allowance used.', free_monthly: 'Your free monthly cancellation will be used.', penalty: 'Your rating will decrease by 2 points.', teacher: 'No rating penalty.'}[getCancellationOutcome(item)])}</p>
-        <div className="flex gap-2"><Button variant="destructive" disabled={Boolean(pending)} onClick={() => void cancelBooking(item.id)}>{pending === item.id ? '…' : lang === 'ru' ? 'Да, отменить' : 'Yes, cancel'}</Button><Button variant="outline" disabled={Boolean(pending)} onClick={() => setConfirm(null)}>{lang === 'ru' ? 'Назад' : 'Back'}</Button></div>
-      </div> : <div className="flex flex-wrap gap-2 mt-3"><Button variant="outline" onClick={() => setConfirm(item.id)}>{t.cancelBooking}</Button>{onSelectRoom && <Button variant="outline" onClick={() => onSelectRoom(item.roomId)}>{lang === 'ru' ? 'На схеме этажа' : 'Show on map'}</Button>}</div>)}
-    </article>)}
-  </div>;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium"
+        >
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {bookings.map((item) => {
+        const isConfirming = confirmId === item.id;
+        const outcome = getCancellationOutcome(item);
+        const outcomeNotice =
+          lang === 'ru'
+            ? getCancellationMessage(outcome)
+            : {
+                early: 'More than 2 hours before start: no penalty or allowance used.',
+                free_monthly: 'Your free monthly cancellation will be used.',
+                penalty: 'Your rating will decrease by 2 points.',
+                teacher: 'No rating penalty for teachers.',
+              }[outcome];
+
+        return (
+          <article
+            key={item.id}
+            className="rounded-xl border border-border bg-card p-4 sm:p-5 transition-all shadow-xs hover:border-primary/30 flex flex-col gap-3"
+          >
+            {/* Header: Room Name + Code + Status Badge */}
+            <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="w-8 h-8 rounded-lg bg-accent text-primary flex items-center justify-center shrink-0">
+                  <DoorOpen size={17} />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-base text-foreground">
+                      {t.coworking} {item.roomNumber}
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-md bg-accent text-primary text-xs font-extrabold tracking-wide">
+                      {getRoomCode(item.roomNumber, lang)}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {item.roomFloor} {t.floorWord}
+                  </span>
+                </div>
+              </div>
+
+              {/* Status Pill */}
+              <div>
+                {item.status === 'active' && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {t.active}
+                  </span>
+                )}
+                {item.status === 'completed' && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
+                    <CheckCircle2 size={13} />
+                    {t.completed}
+                  </span>
+                )}
+                {item.status === 'cancelled' && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                    <XCircle size={13} />
+                    {t.cancelled}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Info details grid matching photo 1 cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-foreground/90">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar size={14} className="text-primary shrink-0" />
+                <span className="font-medium text-foreground">
+                  {formatDate(item.date, false, lang === 'ru' ? 'ru-RU' : 'en-US')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock size={14} className="text-primary shrink-0" />
+                <span className="font-medium text-foreground">
+                  {formatTime(item.startTime)} — {formatTime(item.endTime)}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users size={14} className="text-primary shrink-0" />
+                <span>
+                  {item.attendees} / {item.roomCapacity} {t.seats}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <UserRound size={14} className="text-primary shrink-0" />
+                <span className="truncate">{item.userName}</span>
+              </div>
+            </div>
+
+            {/* Purpose */}
+            {item.purpose && (
+              <div className="flex items-start gap-2 text-xs pt-1 border-t border-border/40 text-muted-foreground">
+                <FileText size={14} className="text-primary shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-medium text-foreground/80">{t.purpose}:</span>{' '}
+                  <span>{item.purpose}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Active Actions / Confirmation Box */}
+            {item.status === 'active' && (
+              <div className="pt-2">
+                {isConfirming ? (
+                  <div className="rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/20 p-3.5 flex flex-col gap-2.5">
+                    <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-semibold text-xs">
+                      <AlertCircle size={15} className="shrink-0" />
+                      <span>{t.confirmCancel}</span>
+                    </div>
+                    <p className="text-xs text-rose-600/90 dark:text-rose-400/90 leading-relaxed">
+                      {outcomeNotice}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={Boolean(pendingId)}
+                        onClick={() => void handleCancel(item.id)}
+                        className="rounded-xl text-xs font-semibold cursor-pointer"
+                      >
+                        {pendingId === item.id ? '…' : lang === 'ru' ? 'Да, отменить' : 'Yes, cancel'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={Boolean(pendingId)}
+                        onClick={() => setConfirmId(null)}
+                        className="rounded-xl text-xs font-semibold cursor-pointer"
+                      >
+                        {lang === 'ru' ? 'Назад' : 'Back'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmId(item.id)}
+                      className="rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                    >
+                      <Trash2 size={13} className="mr-1.5" />
+                      {t.cancelBooking}
+                    </Button>
+                    {onSelectRoom && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onSelectRoom(item.roomId)}
+                        className="rounded-xl text-xs font-semibold cursor-pointer"
+                      >
+                        <MapPin size={13} className="mr-1.5" />
+                        {lang === 'ru' ? 'На схеме этажа' : 'Show on map'}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
 }

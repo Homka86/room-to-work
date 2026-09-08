@@ -23,7 +23,6 @@ export default function Home() {
   const [floor, setFloor] = useState(1);
   const [date, setDate] = useState<string>('');
   const [time, setTime] = useState<number | null>(null);
-  const [onlyFree, setOnlyFree] = useState(false);
   const [selectedId, setSelectedId] = useState(ROOMS.find((room) => room.floor === 1)!.id);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
@@ -71,6 +70,7 @@ export default function Home() {
         activeBooking={activeBooking}
         onToggleLanguage={toggleLanguage}
         onToggleTheme={toggleTheme}
+        onOpenUser={() => setMyBookingsOpen(true)}
         onOpenMyBookings={() => setMyBookingsOpen(true)}
         onOpenAdditionalInfo={() => setAdditionalInfoOpen(true)}
       />
@@ -105,8 +105,6 @@ export default function Home() {
           lang={lang}
           onDateChange={setDate}
           onTimeChange={setTime}
-          onlyFree={onlyFree}
-          onOnlyFreeChange={setOnlyFree}
         />
 
         <div className="main-grid">
@@ -119,7 +117,6 @@ export default function Home() {
             activeBookingRoomId={activeBooking?.roomId}
             t={t}
             lang={lang}
-            onlyFree={onlyFree}
             onFloorChange={changeFloor}
             onSelectRoom={selectRoom}
           />

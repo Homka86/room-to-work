@@ -19,7 +19,7 @@ export function AdditionalInfoDialog({ open, onOpenChange, t }: AdditionalInfoDi
   const copy = t;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="additional-info-dialog max-w-[580px] w-full p-6 sm:p-7 overflow-y-auto max-h-[90vh]" showCloseButton>
+      <DialogContent className="additional-info-dialog w-[96vw] sm:max-w-[620px] md:max-w-[680px] p-6 sm:p-7 overflow-y-auto overflow-x-hidden max-h-[90vh]" showCloseButton={false}>
         <div className="additional-info-heading">
           <span><Info size={21} /></span>
           <div>
@@ -43,8 +43,13 @@ export function AdditionalInfoDialog({ open, onOpenChange, t }: AdditionalInfoDi
             <p>{copy?.bookingRules ?? 'Брони одного аккаунта не могут пересекаться по времени. На разные часы можно забронировать несколько пространств. У каждого пространства на выбранный слот может быть только один ответственный.'}</p>
           </section>
         </div>
-        <button type="button" className="choose-button" onClick={() => onOpenChange(false)}>
-          <X size={17} /> {copy?.close ?? 'Закрыть'}
+        <button
+          id="additional-info-close-button"
+          type="button"
+          className="choose-button cursor-pointer flex items-center justify-center gap-2"
+          onClick={() => onOpenChange(false)}
+        >
+          {copy?.close ?? 'Закрыть'} <X size={17} />
         </button>
       </DialogContent>
     </Dialog>

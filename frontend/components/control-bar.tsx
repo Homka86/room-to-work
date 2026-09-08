@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { CalendarDays, Clock3 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectTrigger,
@@ -29,8 +28,6 @@ export function ControlBar({
   lang,
   onDateChange,
   onTimeChange,
-  onlyFree = false,
-  onOnlyFreeChange,
 }: ControlBarProps) {
   const upcomingDays = useMemo(() => getUpcomingDays(7, getToday()), []);
 
@@ -65,8 +62,24 @@ export function ControlBar({
       'Nov',
       'Dec',
     ];
-    const weekDaysRu = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-    const weekDaysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekDaysRu = [
+      'Воскресенье',
+      'Понедельник',
+      'Вторник',
+      'Среда',
+      'Четверг',
+      'Пятница',
+      'Суббота',
+    ];
+    const weekDaysEn = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
 
     const m = lang === 'ru' ? monthsRu[d.getMonth()] : monthsEn[d.getMonth()];
     const wd = lang === 'ru' ? weekDaysRu[d.getDay()] : weekDaysEn[d.getDay()];
@@ -77,7 +90,7 @@ export function ControlBar({
     if (index === 1) {
       return `${t.tomorrow}, ${dayNum} ${m}`;
     }
-    return `${wd.toUpperCase()}, ${dayNum} ${m}`;
+    return `${wd}, ${dayNum} ${m}`;
   };
 
   const selectedDayIndex = upcomingDays.indexOf(date);
@@ -87,21 +100,21 @@ export function ControlBar({
   return (
     <section className="control-bar" aria-label="Параметры поиска">
       {/* Date selector: strictly upcoming week */}
-      <div className="date-control flex items-center gap-3 pr-5 border-r border-border">
+      <div className="date-control flex items-center">
         <CalendarDays size={19} className="text-[#8e879f] shrink-0" />
         <div className="flex flex-col gap-0.5">
-          <span className="control-caption text-[11px] font-medium text-muted-foreground">
+          <span className="control-caption text-[11px] font-medium text-muted-foreground select-none">
             {t.when}
           </span>
           <Select
-            value={date || undefined}
+            value={date || null}
             onValueChange={(val) => {
               if (val) onDateChange(val);
             }}
           >
             <SelectTrigger
               id="control-date-select"
-              className="h-auto p-0 border-0 shadow-none font-semibold text-sm text-foreground bg-transparent! dark:bg-transparent! hover:bg-transparent! dark:hover:bg-transparent! hover:text-primary dark:hover:text-primary focus:ring-0 focus:outline-none min-w-[155px] cursor-pointer"
+              className="h-auto p-0 border-0 shadow-none font-semibold text-sm text-foreground bg-transparent! dark:bg-transparent! hover:bg-transparent! dark:hover:bg-transparent! hover:text-primary dark:hover:text-primary focus:ring-0 focus:outline-none min-w-[155px] cursor-pointer select-none"
               aria-label={t.when}
             >
               <SelectValue placeholder={t.selectDatePrompt}>
@@ -110,7 +123,7 @@ export function ControlBar({
             </SelectTrigger>
             <SelectContent>
               {upcomingDays.map((dayStr, idx) => (
-                <SelectItem key={dayStr} value={dayStr}>
+                <SelectItem key={dayStr} value={dayStr} className="select-none">
                   {formatDayLabel(dayStr, idx)}
                 </SelectItem>
               ))}
@@ -120,21 +133,21 @@ export function ControlBar({
       </div>
 
       {/* Time selector: 08:00 - 22:00 */}
-      <div className="time-control flex items-center gap-3 pl-2 sm:pl-3">
+      <div className="time-control flex items-center">
         <Clock3 size={19} className="text-[#8e879f] shrink-0" />
         <div className="flex flex-col gap-0.5">
-          <span className="control-caption text-[11px] font-medium text-muted-foreground">
+          <span className="control-caption text-[11px] font-medium text-muted-foreground select-none">
             {t.time}
           </span>
           <Select
-            value={time !== null ? String(time) : undefined}
+            value={time !== null ? String(time) : null}
             onValueChange={(value) => {
               if (value !== null) onTimeChange(Number(value));
             }}
           >
             <SelectTrigger
               id="control-time-select"
-              className="h-auto p-0 border-0 shadow-none font-semibold text-sm text-foreground bg-transparent! dark:bg-transparent! hover:bg-transparent! dark:hover:bg-transparent! hover:text-primary dark:hover:text-primary focus:ring-0 focus:outline-none min-w-[120px] cursor-pointer"
+              className="h-auto p-0 border-0 shadow-none font-semibold text-sm text-foreground bg-transparent! dark:bg-transparent! hover:bg-transparent! dark:hover:bg-transparent! hover:text-primary dark:hover:text-primary focus:ring-0 focus:outline-none min-w-[120px] cursor-pointer select-none"
               aria-label={t.time}
             >
               <SelectValue placeholder={t.selectTimePrompt}>
@@ -143,7 +156,7 @@ export function ControlBar({
             </SelectTrigger>
             <SelectContent>
               {TIME_OPTIONS.map((value) => (
-                <SelectItem key={value} value={String(value)}>
+                <SelectItem key={value} value={String(value)} className="select-none">
                   {formatTime(value)}
                 </SelectItem>
               ))}
@@ -151,21 +164,6 @@ export function ControlBar({
           </Select>
         </div>
       </div>
-
-      {onOnlyFreeChange && (
-        <>
-          <span className="control-spacer" />
-          <label className="free-filter">
-            <span>{t.onlyFree}</span>
-            <Switch
-              id="only-free-toggle"
-              checked={onlyFree}
-              onCheckedChange={onOnlyFreeChange}
-              aria-label={t.onlyFree}
-            />
-          </label>
-        </>
-      )}
     </section>
   );
 }

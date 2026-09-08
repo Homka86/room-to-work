@@ -112,3 +112,10 @@ export async function cancel(db: D1Database, user: User, id: unknown, now: numbe
   if (row.status === 'completed') throw new ApiError(409, 'Завершённую бронь нельзя отменить.');
   return { outcome: row.cancellation_outcome };
 }
+
+export async function setRole(db: D1Database, user: User, role: unknown) {
+  if (role !== 'student' && role !== 'teacher') throw new ApiError(400, 'Некорректная роль.');
+  await db.prepare('UPDATE users SET role=? WHERE id=?').bind(role, user.id).run();
+  return { role };
+}
+

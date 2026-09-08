@@ -202,11 +202,11 @@ a {
 .control-bar {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 0;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 13px 20px;
+  padding: 13px 0;
   min-height: 72px;
   margin-bottom: 24px;
 }
@@ -214,8 +214,14 @@ a {
   display: flex;
   align-items: center;
   gap: 13px;
-  padding-right: 25px;
+  padding: 0 20px;
   border-right: 1px solid var(--border);
+}
+.time-control {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 20px;
 }
 .date-control > svg,
 .time-control > svg {
@@ -241,11 +247,6 @@ a {
   width: 150px;
   padding: 0;
   color-scheme: light;
-}
-.time-control {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 .control-spacer {
   flex: 1;
@@ -1175,21 +1176,26 @@ a {
     max-width: 290px;
   }
   .control-bar {
-    gap: 14px;
-    flex-wrap: wrap;
-    padding: 13px 14px;
+    gap: 0;
+    flex-wrap: nowrap;
+    padding: 12px 0;
   }
   .date-control {
-    padding-right: 12px;
-    gap: 9px;
+    padding: 0 14px;
+    gap: 10px;
+    border-right: 1px solid var(--border);
     flex: 1;
+    min-width: 0;
   }
   .date-control input {
     width: 142px;
     font-size: 14px;
   }
   .time-control {
-    gap: 6px;
+    padding: 0 14px;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
   }
   .time-control > .control-caption {
     display: none;
@@ -1345,13 +1351,19 @@ a {
 }
 @media (max-width: 380px) {
   .date-control {
-    padding-right: 8px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .time-control {
+    padding: 0 10px;
+    gap: 8px;
   }
   .date-control input {
     width: 128px;
   }
   .time-control > svg {
-    display: none;
+    display: block;
+    flex-shrink: 0;
   }
   .room-bottom {
     font-size: 12px;
@@ -1451,6 +1463,61 @@ a {
   color: var(--foreground);
   font-weight: 700;
 }
+.user-bookings-tabs-list {
+  background: #ece8f3;
+  border-radius: 16px;
+}
+.dark .user-bookings-tabs-list {
+  background: #1f212c !important;
+  border-color: transparent !important;
+}
+.user-bookings-tab {
+  border-radius: 12px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #7b758b !important;
+  transition: all 0.15s ease !important;
+}
+.dark .user-bookings-tab {
+  color: #8c90a3 !important;
+}
+.user-bookings-tab:hover {
+  color: var(--foreground) !important;
+}
+.user-bookings-tab[data-active],
+.user-bookings-tab[data-state="active"] {
+  background: #ffffff !important;
+  color: #171520 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+.dark .user-bookings-tab[data-active],
+.dark .user-bookings-tab[data-state="active"] {
+  background: #13141a !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+.user-bookings-badge {
+  background: rgba(0, 0, 0, 0.08);
+  color: #555065;
+  border-radius: 9999px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+.dark .user-bookings-badge {
+  background: #313545 !important;
+  color: #9da2b8 !important;
+}
+.user-bookings-tab[data-active] .user-bookings-badge,
+.user-bookings-tab[data-state="active"] .user-bookings-badge {
+  background: #f1edf7;
+  color: #1a1625;
+}
+.dark .user-bookings-tab[data-active] .user-bookings-badge,
+.dark .user-bookings-tab[data-state="active"] .user-bookings-badge {
+  background: #313545 !important;
+  color: #ffffff !important;
+}
+
 .additional-info-dialog {
   border-radius: 18px !important;
   background: var(--card) !important;

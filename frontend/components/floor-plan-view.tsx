@@ -29,12 +29,9 @@ export function FloorPlanView({
   lang,
   onFloorChange,
   onSelectRoom,
-  onlyFree = false,
 }: FloorPlanViewProps) {
   const floorRooms = rooms.filter((r) => r.floor === floor);
-  const visibleRooms = onlyFree && date && time !== null
-    ? floorRooms.filter((room) => getRoomAvailability(room, date, time).status === 'free')
-    : floorRooms;
+  const visibleRooms = floorRooms;
 
   return (
     <section className="floor-section" aria-label="Выбор коворкинга">
@@ -117,7 +114,7 @@ export function FloorPlanView({
                       );
                     })}
 
-                    {!onlyFree && floorRooms.length === 7 && (
+                    {floorRooms.length === 7 && (
                       <div className="common-space">
                         <DoorOpen size={25} />
                         <span>{t.loungeArea}</span>

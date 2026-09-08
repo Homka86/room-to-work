@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { ArrowUpRight, Bookmark, Check, Users } from 'lucide-react';
 import { formatTime, type Room, type RoomState } from '@/lib/campus';
-import type { Translation, Language } from '@/lib/translations';
+import { getRoomCode, type Translation, type Language } from '@/lib/translations';
 
 interface RoomCardProps {
   room: Room;
@@ -89,7 +89,7 @@ export function RoomCard({
       style={{ '--room-delay': index * 35 + 'ms' } as CSSProperties}
     >
       <span className="room-top">
-        <span className="room-code">К{room.number}</span>
+        <span className="room-code">{getRoomCode(room.number, lang)}</span>
         {isBookedByMe ? (
           <span
             id={`room-user-badge-${room.id}`}

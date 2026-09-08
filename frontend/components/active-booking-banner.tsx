@@ -1,7 +1,7 @@
 import { CheckCircle2 } from 'lucide-react';
 import { formatTime, formatDate } from '@/lib/campus';
 import type { UserBooking } from '@/lib/bookings';
-import type { Translation, Language } from '@/lib/translations';
+import { getRoomCode, type Translation, type Language } from '@/lib/translations';
 
 interface ActiveBookingBannerProps {
   booking: UserBooking;
@@ -33,7 +33,7 @@ export function ActiveBookingBanner({
             {t.bookedByMe}
           </div>
           <div className="text-sm font-bold text-foreground">
-            {t.coworking} {booking.roomNumber} ({booking.roomFloor} {lang === 'ru' ? 'этаж' : 'floor'}) · {formatDate(booking.date)} {lang === 'ru' ? 'с' : 'from'} {formatTime(booking.startTime)} {lang === 'ru' ? 'до' : 'to'} {formatTime(booking.endTime)}
+            {t.coworking} {booking.roomNumber} ({getRoomCode(booking.roomNumber, lang)}, {booking.roomFloor} {lang === 'ru' ? 'этаж' : 'floor'}) · {formatDate(booking.date)} {lang === 'ru' ? 'с' : 'from'} {formatTime(booking.startTime)} {lang === 'ru' ? 'до' : 'to'} {formatTime(booking.endTime)}
           </div>
         </div>
       </div>
