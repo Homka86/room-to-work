@@ -10,7 +10,9 @@ export type Room = {
 };
 export type RoomStatus = 'free' | 'soon' | 'busy' | 'idle';
 export type Booking = { start: number; end: number; attendees: number };
-export const MIN_BOOKING_ATTENDEES = 4;
+// A reservation may be made for one person; capacity still limits the total
+// number of people in overlapping reservations.
+export const MIN_BOOKING_ATTENDEES = 1;
 export type RoomState = {
   status: RoomStatus;
   label: string;

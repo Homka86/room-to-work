@@ -77,7 +77,7 @@ void test('concurrent requests cannot reserve one room twice', async () => {
 void test('server validates dates, hours, duration and capacity', async () => {
   const f = fixture();
   try {
-    for (const bad of [{date:'2026-02-30'},{date:'2026-09-06'},{date:'2026-09-14'},{startTime:470},{endTime:495},{endTime:750},{endTime:1350},{attendees:7},{attendees:3},{attendees:0},{attendees:1.5},{userName:''},{purpose:'x'.repeat(501)}]) {
+    for (const bad of [{date:'2026-02-30'},{date:'2026-09-06'},{date:'2026-09-14'},{startTime:470},{endTime:495},{endTime:750},{endTime:1350},{attendees:7},{attendees:0},{attendees:1.5},{userName:''},{purpose:'x'.repeat(501)}]) {
       await assert.rejects(book(f.db,f.alice,input(bad),NOW),e => e instanceof ApiError && e.status===400);
     }
   } finally { f.dispose(); }

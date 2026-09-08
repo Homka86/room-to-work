@@ -107,31 +107,56 @@ export function BookingDialog({
 
   const requestedPeople = peopleCount ?? MIN_BOOKING_ATTENDEES;
   const roomCapacity = room?.capacity ?? 0;
+  const capacityLimitMessage =
+    lang === 'ru'
+      ? 'Нельзя превысить вместимость: на это время свободных мест недостаточно. Выберите другое время или меньше участников.'
+      : 'Capacity limit exceeded: there are not enough free seats at this time. Choose another time or fewer people.';
+
+  const isFutureStart = (value: number) =>
+    Date.parse(`${bookingDate}T${formatTime(value)}:00+05:00`) > serverTime;
 
   // A time is unavailable only when the room has no remaining seats.
   const availableStartTimes = useMemo(() => {
     return TIME_OPTIONS.filter((st) => {
-      if (st + 30 > 1320 || Date.parse(`${bookingDate}T${formatTime(st)}:00+05:00`) <= serverTime) return false;
+      if (st + 30 > 1320 || !isFutureStart(st)) return false;
       return intervalFitsCapacity(roomSchedule, st, st + 30, requestedPeople, roomCapacity);
     });
   }, [roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
 
-  // The selected group must fit for the whole requested interval.
+  // Keep all possible end times available. If an end would exceed the booking
+  // limits, the start time is corrected only as much as necessary.
   const availableEndTimes = useMemo(() => {
     if (startTime === null) return [];
-    const minEnd = startTime + 30;
-    const times: number[] = [];
-    for (let tOpt = minEnd; tOpt <= Math.min(startTime + 240, 1320); tOpt += 30) {
-      if (intervalFitsCapacity(roomSchedule, startTime, tOpt, requestedPeople, roomCapacity)) times.push(tOpt);
-    }
-    return times;
-  }, [startTime, roomSchedule, requestedPeople, roomCapacity]);
+    return TIME_OPTIONS.filter((end) => {
+      if (end < 510) return false;
+      let adjustedStart = startTime;
+      if (end - adjustedStart > 240) adjustedStart = end - 240;
+      if (end - adjustedStart < 30) adjustedStart = end - 30;
+      return adjustedStart >= 480 && isFutureStart(adjustedStart) && intervalFitsCapacity(roomSchedule, adjustedStart, end, requestedPeople, roomCapacity);
+    });
+  }, [startTime, roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
 
   const maximumPeople = useMemo(() => {
     if (startTime === null || endTime === null) return roomCapacity;
     return Math.max(0, roomCapacity - getOccupiedSeats(roomSchedule, startTime, endTime));
   }, [roomCapacity, roomSchedule, startTime, endTime]);
   const peopleLimit = startTime !== null && endTime !== null ? maximumPeople : roomCapacity;
+
+  function findEndForStart(start: number, preferredEnd: number) {
+    const ends: number[] = [];
+    for (let end = start + 30; end <= Math.min(start + 240, 1320); end += 30) {
+      if (intervalFitsCapacity(roomSchedule, start, end, requestedPeople, roomCapacity)) ends.push(end);
+    }
+    return ends.sort((a, b) => Math.abs(a - preferredEnd) - Math.abs(b - preferredEnd))[0] ?? null;
+  }
+
+  function findStartForEnd(end: number, preferredStart: number) {
+    const starts: number[] = [];
+    for (let start = Math.max(480, end - 240); start <= end - 30; start += 30) {
+      if (isFutureStart(start) && intervalFitsCapacity(roomSchedule, start, end, requestedPeople, roomCapacity)) starts.push(start);
+    }
+    return starts.sort((a, b) => Math.abs(a - preferredStart) - Math.abs(b - preferredStart))[0] ?? null;
+  }
 
   const formatBookingDateOption = (dayStr: string): string => {
     const d = new Date(dayStr + 'T12:00:00');
@@ -208,13 +233,21 @@ export function BookingDialog({
     }
 
     const nextStart = Number(value);
-    setStartTime(nextStart);
-
-    if (endTime !== null) {
-      if (!intervalFitsCapacity(roomSchedule, nextStart, endTime, requestedPeople, roomCapacity)) {
-        setEndTime(null);
-      }
+    if (endTime === null) {
+      setStartTime(nextStart);
+      setErrorMsg(null);
+      return;
     }
+
+    let nextEnd = endTime;
+    if (nextEnd - nextStart < 30) nextEnd = nextStart + 30;
+    if (nextEnd - nextStart > 240) nextEnd = nextStart + 240;
+    if (nextEnd > 1320 || !intervalFitsCapacity(roomSchedule, nextStart, nextEnd, requestedPeople, roomCapacity)) {
+      nextEnd = findEndForStart(nextStart, Math.min(nextEnd, 1320));
+    }
+    setStartTime(nextStart);
+    setEndTime(nextEnd);
+    setErrorMsg(nextEnd === null ? capacityLimitMessage : null);
   }
 
   function handleEndTimeChange(value: string) {
@@ -222,7 +255,18 @@ export function BookingDialog({
       setEndTime(null);
       return;
     }
-    setEndTime(Number(value));
+    const nextEnd = Number(value);
+    if (startTime === null) return;
+
+    let nextStart = startTime;
+    if (nextEnd - nextStart < 30) nextStart = nextEnd - 30;
+    if (nextEnd - nextStart > 240) nextStart = nextEnd - 240;
+    if (nextStart < 480 || !isFutureStart(nextStart) || !intervalFitsCapacity(roomSchedule, nextStart, nextEnd, requestedPeople, roomCapacity)) {
+      nextStart = findStartForEnd(nextEnd, Math.max(480, nextStart));
+    }
+    setStartTime(nextStart);
+    setEndTime(nextStart === null ? null : nextEnd);
+    setErrorMsg(nextStart === null ? capacityLimitMessage : null);
   }
 
   async function handleBookingSubmit(e: React.SyntheticEvent) {
@@ -778,6 +822,9 @@ export function BookingDialog({
                     setPeopleCount(nextPeople);
                     if (startTime !== null && endTime !== null && !intervalFitsCapacity(roomSchedule, startTime, endTime, nextPeople, roomCapacity)) {
                       setEndTime(null);
+                      setErrorMsg(capacityLimitMessage);
+                    } else {
+                      setErrorMsg(null);
                     }
                   }
                 }}

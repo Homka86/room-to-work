@@ -25,14 +25,17 @@ interface RoomDetailsSidebarProps {
   onOpenBookingDialog: () => void;
 }
 
-function getBookingLoadColor(attendees: number) {
-  if (attendees >= 8) {
-    return { background: '#df4f5c', borderColor: '#c83d4b', dot: '#c83d4b' };
-  }
-  if (attendees >= 6) {
-    return { background: '#ef9a54', borderColor: '#dc813d', dot: '#dc813d' };
-  }
-  return { background: '#f3d35f', borderColor: '#dbb83d', dot: '#c69f24' };
+function getBookingLoadColor(attendees: number, capacity: number) {
+  const load = Math.max(0, Math.min(1, attendees / capacity));
+
+  // Up to half the room stays yellow. From 50% to 100% the colour moves
+  // smoothly from yellow through orange to red, regardless of room size.
+  const hue = load <= 0.5 ? 48 : 48 * (1 - (load - 0.5) / 0.5);
+  return {
+    background: `hsl(${hue} 82% 66%)`,
+    borderColor: `hsl(${hue} 70% 48%)`,
+    dot: `hsl(${hue} 70% 42%)`,
+  };
 }
 
 export function RoomDetailsSidebar({
@@ -91,7 +94,7 @@ export function RoomDetailsSidebar({
         <div id="room-timeline-bar" className="timeline" style={!scheduleLoaded ? { background: "var(--muted)" } : undefined} aria-label="Занятость с 8 до 22 часов">
           {scheduleSegments.map((booking, index) => (
             (() => {
-              const color = getBookingLoadColor(booking.attendees);
+              const color = getBookingLoadColor(booking.attendees, room.capacity);
               return (
                 <span
                   key={index}
@@ -134,7 +137,7 @@ export function RoomDetailsSidebar({
             .map((booking, index) => (
               <div key={index}>
                 <span>
-                  <span className="schedule-dot" style={{ background: getBookingLoadColor(booking.attendees).dot }} />
+                  <span className="schedule-dot" style={{ background: getBookingLoadColor(booking.attendees, room.capacity).dot }} />
                   {formatTime(booking.start)} — {formatTime(booking.end)}
                 </span>
                 <span>
