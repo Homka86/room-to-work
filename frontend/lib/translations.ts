@@ -79,6 +79,7 @@ export interface Translation {
   nameLabel: string;
   namePlaceholder: string;
   peopleCountLabel: string;
+  maximum: string;
   purposeLabel: string;
   dateLabel: string;
   startTimeLabel: string;
@@ -186,6 +187,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     nameLabel: 'Ваше имя и фамилия',
     namePlaceholder: 'Например, Иван Иванов',
     peopleCountLabel: 'Количество человек',
+    maximum: 'Максимум',
     purposeLabel: 'Цель бронирования',
     dateLabel: 'Дата',
     startTimeLabel: 'Время начала',
@@ -209,9 +211,20 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       'Для встречи': 'Для встречи',
     },
     purposes: {
+      'Командный проект': 'Командный проект',
+      'Онлайн-созвон': 'Онлайн-созвон',
+      'Встреча и обсуждение': 'Встреча и обсуждение',
+      'Индивидуальная работа': 'Индивидуальная работа',
+      'Подготовка к экзамену': 'Подготовка к экзамену',
+      'Подготовка к презентации': 'Подготовка к презентации',
+      'Работа над курсовой': 'Работа над курсовой',
+      'Работа над дипломом': 'Работа над дипломом',
+      'Учебная консультация': 'Учебная консультация',
+      'Проектная встреча': 'Проектная встреча',
+      'Мозговой штурм': 'Мозговой штурм',
+      'Подготовка онлайн-материалов': 'Подготовка онлайн-материалов',
       'Учёба / подготовка к парам': 'Учёба / подготовка к парам',
       'Командный проект / созвон': 'Командный проект / созвон',
-      'Индивидуальная работа': 'Индивидуальная работа',
       'Встреча с преподавателем': 'Встреча с преподавателем',
       'Другое (укажу сам)': 'Другое (укажу сам)',
     },
@@ -301,6 +314,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     nameLabel: 'Your full name',
     namePlaceholder: 'e.g. Alex Johnson',
     peopleCountLabel: 'Number of people',
+    maximum: 'Maximum',
     purposeLabel: 'Booking purpose',
     dateLabel: 'Date',
     startTimeLabel: 'Start time',
@@ -324,9 +338,20 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       'Для встречи': 'Meeting room',
     },
     purposes: {
+      'Командный проект': 'Team project',
+      'Онлайн-созвон': 'Online call',
+      'Встреча и обсуждение': 'Meeting and discussion',
+      'Индивидуальная работа': 'Individual work',
+      'Подготовка к экзамену': 'Exam preparation',
+      'Подготовка к презентации': 'Presentation preparation',
+      'Работа над курсовой': 'Coursework',
+      'Работа над дипломом': 'Thesis work',
+      'Учебная консультация': 'Academic consultation',
+      'Проектная встреча': 'Project meeting',
+      'Мозговой штурм': 'Brainstorming',
+      'Подготовка онлайн-материалов': 'Preparing online materials',
       'Учёба / подготовка к парам': 'Studying / Exam prep',
       'Командный проект / созвон': 'Team project / Meeting',
-      'Индивидуальная работа': 'Focused solo work',
       'Встреча с преподавателем': 'Meeting with professor',
       'Другое (укажу сам)': 'Other (specify below)',
     },

@@ -154,7 +154,8 @@ export function RoomDetailsSidebar({
                 `${t.busy} ` +
                 formatTime(booking.start) +
                 '–' +
-                formatTime(booking.end)
+                formatTime(booking.end) +
+                ` · ${booking.attendees}/${room.capacity}`
               }
             />
           ))}
@@ -182,7 +183,11 @@ export function RoomDetailsSidebar({
                   <span className="schedule-dot" />
                   {formatTime(booking.start)} — {formatTime(booking.end)}
                 </span>
-                <span>{t.busy}</span>
+                <span>
+                  {lang === 'ru'
+                    ? `${t.busy}: ${booking.attendees}/${room.capacity}`
+                    : `${booking.attendees}/${room.capacity} occupied`}
+                </span>
               </div>
             ))}
           {scheduleLoaded && !schedule.length && (

@@ -9,7 +9,8 @@ export type Room = {
   monitor: boolean;
 };
 export type RoomStatus = 'free' | 'soon' | 'busy' | 'idle';
-export type Booking = { start: number; end: number };
+export type Booking = { start: number; end: number; attendees: number };
+export const MIN_BOOKING_ATTENDEES = 4;
 export type RoomState = {
   status: RoomStatus;
   label: string;
@@ -19,6 +20,8 @@ export type RoomState = {
   untilTime?: number;
   minutesUntilBooking?: number;
   isFreeAllDay?: boolean;
+  occupiedSeats?: number;
+  remainingSeats?: number;
 };
 export function getToday() { return new Date(Date.now() + 5 * 3600000).toISOString().slice(0, 10); }
 export const FLOOR_NAMES = ['Первый этаж', 'Второй этаж', 'Третий этаж'];
@@ -65,6 +68,11 @@ export function isScheduleLoaded(date: string) {
 export function getSchedule(room: Room, date: string): Booking[] {
   return schedules.filter(slot => slot.roomId === room.id && slot.date === date);
 }
+export function getOccupiedSeats(bookings: Booking[], start: number, end: number) {
+  return bookings
+    .filter((booking) => booking.start < end && booking.end > start)
+    .reduce((total, booking) => total + (booking.attendees ?? 0), 0);
+}
 export function formatTime(minutes: number) {
   return (
     String(Math.floor(minutes / 60)).padStart(2, '0') +
@@ -81,19 +89,23 @@ export function formatDate(date: string, short = false, locale = 'ru-RU') {
 export function getRoomState(room: Room, date: string, time: number): RoomState {
   if (!isScheduleLoaded(date)) return { status: 'idle', label: 'Расписание обновляется', shortLabel: 'Обновление', description: 'Дождитесь загрузки расписания.' };
   const bookings = getSchedule(room, date);
-  const active = bookings.find(
+  const active = bookings.filter(
     (booking) => booking.start <= time && booking.end > time,
   );
-  if (active)
+  const occupiedSeats = active.reduce((total, booking) => total + (booking.attendees ?? 0), 0);
+  const remainingSeats = Math.max(0, room.capacity - occupiedSeats);
+  const next = bookings
+    .filter((booking) => booking.start > time)
+    .sort((a, b) => a.start - b.start)[0];
+  if (remainingSeats === 0)
     return {
       status: 'busy' as RoomStatus,
       label: 'Занято',
-      shortLabel: 'До ' + formatTime(active.end),
-      description: 'Можно прийти после ' + formatTime(active.end),
-      availableAt: active.end,
-      untilTime: active.end,
+      shortLabel: 'Занято полностью',
+      description: 'Все места заняты на выбранное время.',
+      occupiedSeats,
+      remainingSeats,
     };
-  const next = bookings.find((booking) => booking.start > time);
   if (next && next.start - time <= 30)
     return {
       status: 'soon' as RoomStatus,
@@ -107,17 +119,21 @@ export function getRoomState(room: Room, date: string, time: number): RoomState 
       availableAt: time,
       untilTime: next.start,
       minutesUntilBooking: next.start - time,
+      occupiedSeats,
+      remainingSeats,
     };
   return {
     status: 'free' as RoomStatus,
     label: 'Свободно',
-    shortLabel: 'Свободно',
+    shortLabel: remainingSeats < room.capacity ? `Свободно мест: ${remainingSeats}` : 'Свободно',
     description: next
       ? 'Можно занять до ' + formatTime(next.start)
       : 'Можно занять до 22:00',
     availableAt: time,
     untilTime: next?.start,
     isFreeAllDay: !next,
+    occupiedSeats,
+    remainingSeats,
   };
 }
 

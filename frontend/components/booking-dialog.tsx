@@ -32,6 +32,8 @@ import {
   formatDate,
   getToday,
   getUpcomingDays,
+  getOccupiedSeats,
+  MIN_BOOKING_ATTENDEES,
   isScheduleLoaded,
   type Room,
 } from '@/lib/campus';
@@ -56,6 +58,16 @@ type BookingDialogProps = {
   onOpenMyBookings?: () => void;
   onSuccess?: (booking: UserBooking) => void;
 };
+
+function intervalFitsCapacity(
+  bookings: { start: number; end: number; attendees: number }[],
+  start: number,
+  end: number,
+  attendees: number,
+  capacity: number,
+) {
+  return getOccupiedSeats(bookings, start, end) + attendees <= capacity;
+}
 
 export function BookingDialog({
   room,
@@ -93,47 +105,33 @@ export function BookingDialog({
   // Existing schedule for this room on the chosen date
   const roomSchedule = useMemo(() => schedules.filter(slot => slot.roomId === room?.id && slot.date === bookingDate), [schedules, room, bookingDate]);
 
-  // Available start times:
-  // 1. Campus closing limit: start + 30 <= 1320 (22:00)
-  // 2. Start is not during an already booked slot
-  // 3. Has at least 30 minutes before the next booking starts
+  const requestedPeople = peopleCount ?? MIN_BOOKING_ATTENDEES;
+  const roomCapacity = room?.capacity ?? 0;
+
+  // A time is unavailable only when the room has no remaining seats.
   const availableStartTimes = useMemo(() => {
     return TIME_OPTIONS.filter((st) => {
       if (st + 30 > 1320 || Date.parse(`${bookingDate}T${formatTime(st)}:00+05:00`) <= serverTime) return false;
-      const isInside = roomSchedule.some((b) => b.start <= st && b.end > st);
-      if (isInside) return false;
-      const overlapsNext = roomSchedule.some((b) => b.start > st && b.start < st + 30);
-      if (overlapsNext) return false;
-      return true;
+      return intervalFitsCapacity(roomSchedule, st, st + 30, requestedPeople, roomCapacity);
     });
-  }, [roomSchedule, bookingDate, serverTime]);
+  }, [roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
 
-  // Next booking that begins strictly after the chosen start time
-  const nextBookingAfterStart = useMemo(() => {
-    if (startTime === null) return null;
-    const futureBookings = roomSchedule
-      .filter((b) => b.start > startTime)
-      .sort((a, b) => a.start - b.start);
-    return futureBookings[0] || null;
-  }, [roomSchedule, startTime]);
-
-  // Available end times:
-  // Min 30 min, max 4 hours (240 min), up to campus closing (22:00 = 1320 min),
-  // and CANNOT extend into/past the next scheduled booking!
+  // The selected group must fit for the whole requested interval.
   const availableEndTimes = useMemo(() => {
     if (startTime === null) return [];
     const minEnd = startTime + 30;
-    const maxAllowed = Math.min(
-      startTime + 240,
-      1320,
-      nextBookingAfterStart ? nextBookingAfterStart.start : 1320,
-    );
     const times: number[] = [];
-    for (let tOpt = minEnd; tOpt <= maxAllowed; tOpt += 30) {
-      times.push(tOpt);
+    for (let tOpt = minEnd; tOpt <= Math.min(startTime + 240, 1320); tOpt += 30) {
+      if (intervalFitsCapacity(roomSchedule, startTime, tOpt, requestedPeople, roomCapacity)) times.push(tOpt);
     }
     return times;
-  }, [startTime, nextBookingAfterStart]);
+  }, [startTime, roomSchedule, requestedPeople, roomCapacity]);
+
+  const maximumPeople = useMemo(() => {
+    if (startTime === null || endTime === null) return roomCapacity;
+    return Math.max(0, roomCapacity - getOccupiedSeats(roomSchedule, startTime, endTime));
+  }, [roomCapacity, roomSchedule, startTime, endTime]);
+  const peopleLimit = startTime !== null && endTime !== null ? maximumPeople : roomCapacity;
 
   const formatBookingDateOption = (dayStr: string): string => {
     const d = new Date(dayStr + 'T12:00:00');
@@ -212,17 +210,8 @@ export function BookingDialog({
     const nextStart = Number(value);
     setStartTime(nextStart);
 
-    const nextBooking = roomSchedule
-      .filter((b) => b.start > nextStart)
-      .sort((a, b) => a.start - b.start)[0];
-    const maxAllowed = Math.min(
-      nextStart + 240,
-      1320,
-      nextBooking ? nextBooking.start : 1320,
-    );
-
     if (endTime !== null) {
-      if (endTime < nextStart + 30 || endTime > maxAllowed) {
+      if (!intervalFitsCapacity(roomSchedule, nextStart, endTime, requestedPeople, roomCapacity)) {
         setEndTime(null);
       }
     }
@@ -264,15 +253,11 @@ export function BookingDialog({
       return;
     }
 
-    // Verify time does not conflict with existing schedule
-    const hasConflict = roomSchedule.some(
-      (b) => Math.max(startTime, b.start) < Math.min(endTime, b.end),
-    );
-    if (hasConflict) {
+    if (!intervalFitsCapacity(roomSchedule, startTime, endTime, peopleCount, roomCapacity)) {
       setErrorMsg(
         lang === 'ru'
-          ? 'Выбранное время пересекается с существующей бронью этого коворкинга.'
-          : 'Selected time overlaps with an existing reservation.',
+          ? 'На выбранный интервал не хватает свободных мест.'
+          : 'There are not enough free seats for this interval.',
       );
       return;
     }
@@ -288,7 +273,7 @@ export function BookingDialog({
       endTime,
       userName,
       purpose,
-      attendees: peopleCount ?? 1,
+      attendees: peopleCount ?? MIN_BOOKING_ATTENDEES,
     });
 
     submitting.current = false;
@@ -427,7 +412,7 @@ export function BookingDialog({
                 <span className="text-[#8e879f] text-xs block">
                   {t.purpose}:
                 </span>
-                <span className="font-medium">{createdBooking.purpose}</span>
+                <span className="font-medium">{t.purposes[createdBooking.purpose] || createdBooking.purpose}</span>
               </div>
             </div>
 
@@ -491,7 +476,7 @@ export function BookingDialog({
               <div className="flex justify-between items-center pb-2 border-b border-[#e7e9f2] dark:border-border">
                 <span className="text-[#777c8e]">{t.purpose}</span>
                 <span className="font-medium text-[#2a2d3c] dark:text-foreground">
-                  {activeBooking.purpose}
+                  {t.purposes[activeBooking.purpose] || activeBooking.purpose}
                 </span>
               </div>
 
@@ -577,7 +562,7 @@ export function BookingDialog({
                 {formatTime(activeBooking.startTime)} — {formatTime(activeBooking.endTime)}
               </div>
               <div className="text-xs text-[#8f6d2b]">
-                {t.purpose}: {activeBooking.purpose}
+                {t.purpose}: {t.purposes[activeBooking.purpose] || activeBooking.purpose}
               </div>
             </div>
 
@@ -770,14 +755,29 @@ export function BookingDialog({
 
             {/* People count selector */}
             <div>
-              <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground mb-1.5 select-none">
-                {t.peopleCountLabel}
-              </span>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="block text-xs font-medium text-[#6c647e] dark:text-muted-foreground select-none">
+                  {t.peopleCountLabel}
+                </span>
+                <button
+                  id="booking-maximum-people-button"
+                  type="button"
+                  className="text-xs font-semibold text-primary hover:underline disabled:opacity-40 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
+                  disabled={startTime !== null && endTime !== null && maximumPeople < 1}
+                  onClick={() => setPeopleCount(maximumPeople || room.capacity)}
+                >
+                  {t.maximum}
+                </button>
+              </div>
               <Select
                 value={peopleCount !== null ? String(peopleCount) : null}
                 onValueChange={(val) => {
                   if (val) {
-                    setPeopleCount(Number(val));
+                    const nextPeople = Number(val);
+                    setPeopleCount(nextPeople);
+                    if (startTime !== null && endTime !== null && !intervalFitsCapacity(roomSchedule, startTime, endTime, nextPeople, roomCapacity)) {
+                      setEndTime(null);
+                    }
                   }
                 }}
               >
@@ -803,7 +803,9 @@ export function BookingDialog({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: Math.max(room.capacity, 1) }, (_, i) => i + 1).map((cnt) => (
+                  {Array.from({
+                    length: Math.max(peopleLimit - MIN_BOOKING_ATTENDEES + 1, 0),
+                  }, (_, i) => i + MIN_BOOKING_ATTENDEES).map((cnt) => (
                     <SelectItem key={cnt} value={String(cnt)} className="select-none cursor-pointer">
                       <span>
                         {cnt}{' '}

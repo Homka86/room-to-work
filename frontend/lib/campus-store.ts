@@ -7,7 +7,7 @@ import { setScheduleCache } from './campus';
 type Snapshot = {
   authenticated: boolean; temporary: boolean; serverTime: number; today: string;
   profile: UserProfile; bookings: UserBooking[]; restrictedRoomIds: number[];
-  schedules: { roomId: number; date: string; start: number; end: number }[];
+  schedules: { roomId: number; date: string; start: number; end: number; attendees: number }[];
   loading: boolean; error: string | null;
 };
 const initial: Snapshot = { authenticated: false, temporary: true, serverTime: 0, today: '',

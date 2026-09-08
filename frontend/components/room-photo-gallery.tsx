@@ -54,7 +54,7 @@ export function RoomPhotoGallery({
         <Image
           key={currentPhoto.url}
           src={currentPhoto.url}
-          alt={`Коворкинг ${roomNumber} - ${currentPhoto.title}`}
+          alt={`${lang === 'ru' ? 'Коворкинг' : 'Coworking'} ${roomNumber} - ${currentPhoto.title}`}
           fill
           unoptimized
           sizes="(max-width: 768px) 100vw, 340px"
@@ -104,7 +104,7 @@ export function RoomPhotoGallery({
                 e.stopPropagation();
                 setCurrentIndex(idx);
               }}
-              aria-label={`Перейти к фото ${idx + 1}`}
+              aria-label={lang === 'ru' ? `Перейти к фото ${idx + 1}` : `Go to photo ${idx + 1}`}
               className={`h-1.5 rounded-full transition-all cursor-pointer ${
                 idx === currentIndex % photos.length ? 'w-4 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
               }`}

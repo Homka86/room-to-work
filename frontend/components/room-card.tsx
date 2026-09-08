@@ -30,7 +30,11 @@ export function RoomCard({
   if (isBookedByMe) {
     statusDisplay = t.bookedByMe;
   } else if (availability.status === 'free') {
-    if (availability.isFreeAllDay) {
+    if (availability.remainingSeats !== undefined && availability.remainingSeats < room.capacity) {
+      statusDisplay = lang === 'ru'
+        ? `Свободно мест: ${availability.remainingSeats}`
+        : `${availability.remainingSeats} seats available`;
+    } else if (availability.isFreeAllDay) {
       statusDisplay = lang === 'ru' ? 'Свободен весь день' : 'Free all day';
     } else if (availability.untilTime) {
       statusDisplay =

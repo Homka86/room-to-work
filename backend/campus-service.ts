@@ -1,4 +1,4 @@
-import { ROOMS } from '../frontend/lib/campus';
+import { MIN_BOOKING_ATTENDEES, ROOMS } from '../frontend/lib/campus';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -50,7 +50,7 @@ export async function snapshot(db: D1Database, user: User | null, now: number) {
   const lastDay = campusDate(now + 6 * DAY);
   const results = await db.batch<Row>([
     complete(db, now),
-    db.prepare(`SELECT room_id, date, start_time, end_time FROM bookings WHERE date BETWEEN ? AND ? AND status != 'cancelled' ORDER BY date, start_time`).bind(today,lastDay),
+    db.prepare(`SELECT room_id, date, start_time, end_time, attendees FROM bookings WHERE date BETWEEN ? AND ? AND status != 'cancelled' ORDER BY date, start_time`).bind(today,lastDay),
     db.prepare('SELECT * FROM bookings WHERE user_id=? ORDER BY starts_at, created_at').bind(user?.id ?? ''),
     db.prepare(POPULAR).bind(now - 30 * DAY),
   ]);
@@ -64,7 +64,7 @@ export async function snapshot(db: D1Database, user: User | null, now: number) {
       freeCancellationsUsed: rows.filter(r => r.cancel_month === month && r.cancellation_outcome === 'free_monthly').length },
     bookings: rows.map(serializeBooking),
     restrictedRoomIds: user?.role === 'student' && rating < 0 ? results[3].results.map((r: Row) => r.room_id) : [],
-    schedules: results[1].results.map((r: Row) => ({ roomId: r.room_id, date: r.date, start: r.start_time, end: r.end_time })),
+    schedules: results[1].results.map((r: Row) => ({ roomId: r.room_id, date: r.date, start: r.start_time, end: r.end_time, attendees: r.attendees })),
   };
 }
 export async function book(db: D1Database, user: User, input: Record<string, unknown>, now: number) {
@@ -76,16 +76,17 @@ export async function book(db: D1Database, user: User, input: Record<string, unk
     throw new ApiError(400, 'Бронирование: от 30 минут до 4 часов, с 08:00 до 22:00, шаг 30 минут.');
   const startsAt = instant(date,startTime), endsAt = instant(date,endTime);
   if (date > campusDate(now + 6 * DAY) || startsAt <= now) throw new ApiError(400, 'Выберите будущее время в ближайшие 7 дней.');
-  if (typeof attendees !== 'number' || !Number.isInteger(attendees) || attendees < 1 || attendees > room.capacity) throw new ApiError(400, `Укажите от 1 до ${room.capacity} участников.`);
+  if (typeof attendees !== 'number' || !Number.isInteger(attendees) || attendees < MIN_BOOKING_ATTENDEES || attendees > room.capacity) throw new ApiError(400, `Укажите от ${MIN_BOOKING_ATTENDEES} до ${room.capacity} участников.`);
   if (typeof input.userName !== 'string' || !input.userName.trim() || input.userName.trim().length > 100 || typeof input.purpose !== 'string' || !input.purpose.trim() || input.purpose.trim().length > 500) throw new ApiError(400, 'Укажите имя (до 100 символов) и цель (до 500 символов).');
   const userName = input.userName.trim(), purpose = input.purpose.trim();
   const results = await db.batch<Row>([
     complete(db, now),
     db.prepare(`INSERT INTO bookings (id,user_id,room_id,date,start_time,end_time,starts_at,ends_at,attendees,user_name,purpose,created_at)
       SELECT ?,?,?,?,?,?,?,?,?,?,?,?
-      WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE status='active' AND starts_at<? AND ends_at>? AND (room_id=? OR user_id=?))
+      WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE status='active' AND starts_at<? AND ends_at>? AND user_id=?)
+      AND COALESCE((SELECT SUM(attendees) FROM bookings WHERE status='active' AND room_id=? AND starts_at<? AND ends_at>?),0)+? <= ?
       AND NOT ((SELECT role FROM users WHERE id=?)='student' AND (SELECT COALESCE(SUM(rating_delta),0) FROM bookings WHERE user_id=?)<0 AND ? IN (${POPULAR}))
-      ON CONFLICT(id) DO NOTHING`).bind(id,user.id,room.id,date,startTime,endTime,startsAt,endsAt,attendees,userName,purpose,now,endsAt,startsAt,room.id,user.id,user.id,user.id,room.id,now - 30 * DAY),
+      ON CONFLICT(id) DO NOTHING`).bind(id,user.id,room.id,date,startTime,endTime,startsAt,endsAt,attendees,userName,purpose,now,endsAt,startsAt,user.id,room.id,endsAt,startsAt,attendees,room.capacity,user.id,user.id,room.id,now - 30 * DAY),
     db.prepare('SELECT * FROM bookings WHERE id=? AND user_id=?').bind(id,user.id),
   ]);
   const row = results[2].results[0] as Row | undefined;
@@ -118,4 +119,3 @@ export async function setRole(db: D1Database, user: User, role: unknown) {
   await db.prepare('UPDATE users SET role=? WHERE id=?').bind(role, user.id).run();
   return { role };
 }
-

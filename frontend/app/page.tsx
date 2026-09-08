@@ -35,7 +35,7 @@ export default function Home() {
   const state = getRoomAvailability(selected, date, time);
   const permission = evaluateBookingPermission(selected.id, date, time);
   const isThisRoomBooked = permission.isSameRoomBooked;
-  const isOtherRoomBooked = !permission.allowed && !isThisRoomBooked && Boolean(activeBooking);
+  const isOtherRoomBooked = Boolean(permission.activeBooking && !isThisRoomBooked);
 
   useCampusTools({ floor, date, time: referenceTime, selectedId }, { setFloor, setSelectedId });
 

@@ -159,7 +159,7 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
                 <FileText size={14} className="text-primary shrink-0 mt-0.5" />
                 <div>
                   <span className="font-medium text-foreground/80">{t.purpose}:</span>{' '}
-                  <span>{item.purpose}</span>
+                  <span>{t.purposes[item.purpose] || item.purpose}</span>
                 </div>
               </div>
             )}

@@ -34,24 +34,31 @@ function fixture() {
   for (const f of readdirSync('drizzle').filter(f => f.endsWith('.sql')).sort()) sqlite.exec(readFileSync(join('drizzle',f),'utf8'));
   const alice = { id: 'alice', role: 'student' as const, university_id: null };
   const bob = { id: 'bob', role: 'student' as const, university_id: null };
+  const charlie = { id: 'charlie', role: 'student' as const, university_id: null };
+  const dave = { id: 'dave', role: 'student' as const, university_id: null };
   sqlite.prepare('INSERT INTO users (id,created_at) VALUES (?,?)').run(alice.id,NOW);
   sqlite.prepare('INSERT INTO users (id,created_at) VALUES (?,?)').run(bob.id,NOW);
-  return { sqlite, db: adapter(sqlite), alice, bob, file, dir, dispose() { try { sqlite.close(); } catch {} rmSync(dir,{recursive:true,force:true}); } };
+  sqlite.prepare('INSERT INTO users (id,created_at) VALUES (?,?)').run(charlie.id,NOW);
+  sqlite.prepare('INSERT INTO users (id,created_at) VALUES (?,?)').run(dave.id,NOW);
+  return { sqlite, db: adapter(sqlite), alice, bob, charlie, dave, file, dir, dispose() { try { sqlite.close(); } catch {} rmSync(dir,{recursive:true,force:true}); } };
 }
-function input(extra = {}) { return { id: crypto.randomUUID(), roomId: 1, date: '2026-09-07', startTime: 480, endTime: 510, attendees: 2, userName: 'Участник', purpose: 'Проект', ...extra }; }
+function input(extra = {}) { return { id: crypto.randomUUID(), roomId: 1, date: '2026-09-07', startTime: 480, endTime: 510, attendees: 4, userName: 'Участник', purpose: 'Проект', ...extra }; }
 const conflict = (e: unknown) => e instanceof ApiError && e.status === 409;
 
 void test('shared schedule, ownership, adjacent reservations and idempotent writes', async () => {
   const f = fixture();
   try {
-    const data = input();
+    const data = input({roomId:4});
     const a = await book(f.db,f.alice,data,NOW);
     assert.equal((await book(f.db,f.alice,data,NOW)).id,a.id);
-    await assert.rejects(book(f.db,f.bob,input(),NOW),conflict);
-    await assert.rejects(book(f.db,f.alice,input({roomId:2}),NOW),conflict);
-    await book(f.db,f.alice,input({roomId:2,startTime:510,endTime:540}),NOW);
+    await book(f.db,f.bob,input({roomId:4}),NOW);
+    await book(f.db,f.charlie,input({roomId:4}),NOW);
+    await assert.rejects(book(f.db,f.dave,input({ roomId:4, attendees: 4 }),NOW),conflict);
+    await assert.rejects(book(f.db,f.alice,input({roomId:4}),NOW),conflict);
+    await book(f.db,f.alice,input({roomId:4,startTime:510,endTime:540}),NOW);
     const publicState = await snapshot(f.db,null,NOW);
-    assert.equal(publicState.schedules.length,2);
+    assert.equal(publicState.schedules.length,4);
+    assert.equal(publicState.schedules.filter(slot => slot.attendees === 4).length,4);
     assert.equal(publicState.bookings.length,0);
     assert.equal(JSON.stringify(publicState.schedules).includes('Участник'),false);
     await assert.rejects(cancel(f.db,f.bob,a.id,NOW),e => e instanceof ApiError && e.status === 404);
@@ -61,7 +68,7 @@ void test('shared schedule, ownership, adjacent reservations and idempotent writ
 void test('concurrent requests cannot reserve one room twice', async () => {
   const f = fixture();
   try {
-    const results = await Promise.allSettled([book(f.db,f.alice,input(),NOW),book(f.db,f.bob,input(),NOW)]);
+    const results = await Promise.allSettled([book(f.db,f.alice,input({ attendees: 6 }),NOW),book(f.db,f.bob,input({ attendees: 6 }),NOW)]);
     assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
     assert.equal((await snapshot(f.db,null,NOW)).schedules.length,1);
   } finally { f.dispose(); }
@@ -69,7 +76,7 @@ void test('concurrent requests cannot reserve one room twice', async () => {
 void test('server validates dates, hours, duration and capacity', async () => {
   const f = fixture();
   try {
-    for (const bad of [{date:'2026-02-30'},{date:'2026-09-06'},{date:'2026-09-14'},{startTime:470},{endTime:495},{endTime:750},{endTime:1350},{attendees:7},{attendees:0},{attendees:1.5},{userName:''},{purpose:'x'.repeat(501)}]) {
+    for (const bad of [{date:'2026-02-30'},{date:'2026-09-06'},{date:'2026-09-14'},{startTime:470},{endTime:495},{endTime:750},{endTime:1350},{attendees:7},{attendees:3},{attendees:0},{attendees:1.5},{userName:''},{purpose:'x'.repeat(501)}]) {
       await assert.rejects(book(f.db,f.alice,input(bad),NOW),e => e instanceof ApiError && e.status===400);
     }
   } finally { f.dispose(); }
