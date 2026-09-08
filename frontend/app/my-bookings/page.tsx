@@ -41,9 +41,20 @@ export default function MyBookingsPage() {
             <h1>{t.myBookings}</h1>
             <p>{lang === 'ru' ? 'Текущие и завершённые бронирования.' : 'Current and completed reservations.'}</p>
           </div>
-          <Link href="/" className="choose-button" style={{ width: 'auto', padding: '11px 18px' }}>
-            {t.chooseCoworking}
-          </Link>
+          {activeBooking ? (
+            <button
+              type="button"
+              disabled
+              className="choose-button disabled:cursor-not-allowed"
+              style={{ width: 'auto', padding: '11px 18px' }}
+            >
+              {lang === 'ru' ? 'Бронь уже есть' : 'Active booking exists'}
+            </button>
+          ) : (
+            <Link href="/" className="choose-button" style={{ width: 'auto', padding: '11px 18px' }}>
+              {t.chooseCoworking}
+            </Link>
+          )}
         </div>
 
         <div className="my-bookings-tools">
