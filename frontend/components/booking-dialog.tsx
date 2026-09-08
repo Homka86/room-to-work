@@ -763,7 +763,7 @@ export function BookingDialog({
                   id="booking-maximum-people-button"
                   type="button"
                   className="text-xs font-semibold text-primary hover:underline disabled:opacity-40 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
-                  disabled={startTime !== null && endTime !== null && maximumPeople < 1}
+                  disabled={startTime !== null && endTime !== null && maximumPeople < MIN_BOOKING_ATTENDEES}
                   onClick={() => setPeopleCount(maximumPeople || room.capacity)}
                 >
                   {t.maximum}
