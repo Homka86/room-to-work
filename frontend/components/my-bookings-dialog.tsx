@@ -94,11 +94,11 @@ export function MyBookingsDialog({
                   <Award size={22} />
                 </span>
                 <div className="min-w-0">
-                  <div className="text-xs text-muted-foreground font-bold truncate">
+                  <div className="text-sm font-bold text-foreground truncate">
                     {t.ratingLabel}
                   </div>
-                  <div className="text-base font-normal text-foreground flex items-baseline gap-1">
-                    <span>{formatRating(profile.rating)}</span>
+                  <div className="text-sm font-normal font-sans leading-normal tracking-normal text-foreground flex items-baseline gap-1">
+                    <span className="font-normal font-sans">{formatRating(profile.rating)}</span>
                     <span className="text-xs font-normal text-muted-foreground">
                       {lang === 'ru'
                         ? profile.rating === 1

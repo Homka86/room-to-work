@@ -29,7 +29,7 @@ export default function Home() {
 
   const referenceDate = date || getToday();
   const referenceTime = time ?? 840;
-  const { activeBooking, cancel } = useUserBookings(referenceDate, referenceTime);
+  const { activeBooking } = useUserBookings(referenceDate, referenceTime);
   const selected: Room = ROOMS.find((room) => room.id === selectedId)!;
   const state = getRoomAvailability(selected, date, time);
   const permission = evaluateBookingPermission(selected.id, date, time);
@@ -53,12 +53,6 @@ export default function Home() {
     setSelectedId(ROOMS.find((room) => room.floor === next)!.id);
   }
 
-  const [cancelError, setCancelError] = useState('');
-  async function handleCancelBooking(bookingId: string) {
-    const result = await cancel(bookingId);
-    setCancelError(result.success ? '' : result.error || 'Не удалось отменить бронь.');
-  }
-
   return (
     <div id="site-root" className="site-shell">
       <HeaderTopBar
@@ -76,7 +70,6 @@ export default function Home() {
 
       <main id="workspace-main" className="workspace">
         <StorageStatus />
-        {cancelError && <p role="alert" className="text-red-600">{cancelError}</p>}
         <div id="page-heading-block" className="page-heading">
           <div>
             <h1>{t.heading}</h1>
@@ -111,13 +104,11 @@ export default function Home() {
             state={state}
             date={date}
             time={time}
-            activeBooking={permission.activeBooking}
             isThisRoomBooked={isThisRoomBooked}
             isOtherRoomBooked={isOtherRoomBooked}
             t={t}
             lang={lang}
             onOpenBookingDialog={() => setBookingDialogOpen(true)}
-            onCancelBooking={handleCancelBooking}
           />
         </div>
 

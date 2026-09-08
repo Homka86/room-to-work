@@ -21,7 +21,7 @@ import {
   getCancellationOutcome,
   type UserBooking,
 } from '@/lib/bookings';
-import { getRoomCode, type Language, type Translation } from '@/lib/translations';
+import { type Language, type Translation } from '@/lib/translations';
 
 interface BookingListProps {
   bookings: UserBooking[];
@@ -87,9 +87,6 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
                     <h4 className="font-bold text-base text-foreground">
                       {t.coworking} {item.roomNumber}
                     </h4>
-                    <span className="px-2 py-0.5 rounded-md bg-accent text-primary text-xs font-extrabold tracking-wide">
-                      {getRoomCode(item.roomNumber, lang)}
-                    </span>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {item.roomFloor} {t.floorWord}
@@ -139,7 +136,7 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
 
               <div className="flex items-center gap-2 text-muted-foreground">
                 <UserRound size={14} className="text-primary shrink-0" />
-                <span className="truncate">{item.userName}</span>
+                <span className="truncate font-normal text-foreground">{item.userName}</span>
               </div>
             </div>
 

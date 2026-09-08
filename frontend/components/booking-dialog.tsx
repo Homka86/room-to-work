@@ -45,7 +45,7 @@ import {
   POPULAR_PURPOSES,
   type UserBooking,
 } from '@/lib/bookings';
-import { type Translation, type Language, TRANSLATIONS, getRoomCode } from '@/lib/translations';
+import { type Translation, type Language, TRANSLATIONS } from '@/lib/translations';
 
 type BookingDialogProps = {
   room: Room | null;
@@ -387,7 +387,7 @@ export function BookingDialog({
                 <span className="text-[#8e879f] text-xs block">
                   {lang === 'ru' ? 'Имя:' : 'Name:'}
                 </span>
-                <span className="font-medium">{createdBooking.userName}</span>
+                <span className="font-normal">{createdBooking.userName}</span>
               </div>
               {createdBooking.attendees && (
                 <div className="text-[#514a66] dark:text-foreground">
@@ -435,7 +435,7 @@ export function BookingDialog({
               </div>
               <div>
                 <DialogTitle id="booking-active-dialog-title" className="text-xl font-bold text-[#2a2d3c] dark:text-foreground m-0">
-                  {lang === 'ru' ? 'Ваша активная бронь' : 'Your active reservation'}
+                  {lang === 'ru' ? 'Ваша бронь' : 'Your reservation'}
                 </DialogTitle>
                 <DialogDescription id="booking-active-dialog-desc" className="text-sm text-[#777c8e] dark:text-muted-foreground m-0">
                   {t.coworking} {room.number} · {room.floor} {t.floorWord}
@@ -556,8 +556,7 @@ export function BookingDialog({
             <div id="booking-conflict-details-card" className="bg-[#fff9ea] border border-[#f5e3b5] rounded-xl p-4 text-sm flex flex-col gap-2 text-[#795411]">
               <div className="font-semibold flex items-center gap-1.5">
                 <DoorOpen size={16} />
-                {lang === 'ru' ? 'Текущая бронь:' : 'Current reservation:'} {activeBooking.roomNumber} ({getRoomCode(activeBooking.roomNumber, lang)},{' '}
-                {activeBooking.roomFloor} {t.floorWord})
+                {lang === 'ru' ? 'Текущая бронь:' : 'Current reservation:'} {t.coworking} {activeBooking.roomNumber} ({activeBooking.roomFloor} {t.floorWord})
               </div>
               <div className="text-xs text-[#8f6d2b]">
                 {formatDate(activeBooking.date)} ·{' '}
@@ -570,8 +569,8 @@ export function BookingDialog({
 
             <div className="text-xs text-[#7d798a] leading-relaxed">
               {lang === 'ru'
-                ? `Чтобы забронировать коворкинг ${room.number} (${getRoomCode(room.number, lang)}), сначала отмените текущую бронь.`
-                : `To reserve workspace ${room.number} (${getRoomCode(room.number, lang)}), please cancel your current reservation first.`}
+                ? `Чтобы забронировать коворкинг ${room.number}, сначала отмените текущую бронь.`
+                : `To reserve workspace ${room.number}, please cancel your current reservation first.`}
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2 w-full">

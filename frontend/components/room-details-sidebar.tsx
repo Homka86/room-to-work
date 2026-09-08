@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Trash2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { RoomPhotoGallery } from './room-photo-gallery';
 import { RoomAmenities } from './room-amenities';
 import {
@@ -10,7 +10,6 @@ import {
   type Room,
   type RoomState,
 } from '@/lib/campus';
-import type { UserBooking } from '@/lib/bookings';
 import type { Translation, Language } from '@/lib/translations';
 
 interface RoomDetailsSidebarProps {
@@ -18,13 +17,11 @@ interface RoomDetailsSidebarProps {
   state: RoomState;
   date: string;
   time: number | null;
-  activeBooking?: UserBooking | null;
   isThisRoomBooked: boolean;
   isOtherRoomBooked: boolean;
   t: Translation;
   lang: Language;
   onOpenBookingDialog: () => void;
-  onCancelBooking: (bookingId: string) => void;
 }
 
 function getBookingLoadColor(attendees: number) {
@@ -42,13 +39,11 @@ export function RoomDetailsSidebar({
   state: _state,
   date,
   time,
-  activeBooking,
   isThisRoomBooked,
   isOtherRoomBooked,
   t,
   lang,
   onOpenBookingDialog,
-  onCancelBooking,
 }: RoomDetailsSidebarProps) {
   const availabilityDate = date || getToday();
   const schedule = getSchedule(room, availabilityDate);
@@ -76,48 +71,6 @@ export function RoomDetailsSidebar({
         <div className="detail-kind">
           {t.kinds[room.kind as keyof typeof t.kinds] || room.kind}
         </div>
-
-        {/* SPECIAL NOTICE: ROOM ALREADY BOOKED BY ME */}
-        {isThisRoomBooked && activeBooking && (
-          <div
-            id="active-room-booked-card"
-            className="p-3.5 mb-4 rounded-xl border border-[#278557]/30 bg-[#eaf7ee] dark:bg-[#153422] text-xs flex flex-col gap-2"
-          >
-            <div className="flex items-center justify-between font-semibold text-[#278557] dark:text-[#52d98c]">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={16} />
-                {t.youBookedThis}
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-white dark:bg-[#1f472e] text-[#278557] dark:text-[#52d98c] font-bold text-[10px]">
-                {t.active}
-              </span>
-            </div>
-            <div className="text-[#33503f] dark:text-[#c4ecd5] leading-relaxed">
-              {formatDate(activeBooking.date)} · {formatTime(activeBooking.startTime)} — {formatTime(activeBooking.endTime)}
-              <br />
-              {t.purpose}: <strong>{activeBooking.purpose}</strong>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                id="sidebar-cancel-booking-button"
-                type="button"
-                className="flex-1 py-1.5 px-2 rounded-lg bg-card border border-[#cf414d] text-[#cf414d] hover:bg-[#fdeef0] dark:hover:bg-[#341b22] font-semibold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                onClick={() => onCancelBooking(activeBooking.id)}
-              >
-                <Trash2 size={13} />
-                {t.cancelBooking}
-              </button>
-              <button
-                id="sidebar-manage-booking-button"
-                type="button"
-                className="py-1.5 px-3 rounded-lg bg-[#278557] text-white hover:bg-[#1f6b46] font-semibold text-xs transition-colors cursor-pointer"
-                onClick={onOpenBookingDialog}
-              >
-                {t.details}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* AMENITIES */}
         <RoomAmenities
