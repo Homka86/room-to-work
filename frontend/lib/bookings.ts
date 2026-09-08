@@ -18,13 +18,13 @@ export function getCancellationOutcome(booking: UserBooking): CancellationOutcom
 export function getCancellationMessage(outcome: CancellationOutcome) {
   return { early: 'До начала больше 2 часов — рейтинг и бесплатная отмена сохранятся.', free_monthly: 'Одна бесплатная отмена в этом месяце — рейтинг сохранится.', penalty: 'Бесплатная отмена использована — рейтинг уменьшится на 2 балла.', teacher: 'Отмена не влияет на рейтинг.' }[outcome];
 }
-export function evaluateBookingPermission(roomId: number, date?: string, startTime?: number | null, endTime?: number | null) {
+export function evaluateBookingPermission(roomId: number, _date?: string, _startTime?: number | null, _endTime?: number | null) {
   const state = getCampusSnapshot();
-  const active = date && startTime != null ? state.bookings.find(b => b.status === 'active' && b.date === date && b.startTime < (endTime ?? startTime + 30) && b.endTime > startTime) ?? null : null;
+  const active = state.bookings.find(b => b.status === 'active') ?? null;
   const blockedByPopularity = state.restrictedRoomIds.includes(roomId);
   return { allowed: state.authenticated && !state.error && !active && !blockedByPopularity,
     isSameRoomBooked: active?.roomId === roomId, activeBooking: active, blockedByPopularity,
-    message: blockedByPopularity ? 'При вашем рейтинге доступны менее востребованные пространства.' : active ? 'На это время у вас уже есть бронирование.' : state.error || undefined };
+    message: blockedByPopularity ? 'При вашем рейтинге доступны менее востребованные пространства.' : active ? 'У вас уже есть активная бронь.' : state.error || undefined };
 }
 type BookingInput = { room: Room; date: string; startTime: number; endTime: number; attendees: number; userName: string; purpose: string };
 let pending: { fingerprint: string; id: string } | null = null;

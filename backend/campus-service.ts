@@ -83,10 +83,10 @@ export async function book(db: D1Database, user: User, input: Record<string, unk
     complete(db, now),
     db.prepare(`INSERT INTO bookings (id,user_id,room_id,date,start_time,end_time,starts_at,ends_at,attendees,user_name,purpose,created_at)
       SELECT ?,?,?,?,?,?,?,?,?,?,?,?
-      WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE status='active' AND starts_at<? AND ends_at>? AND user_id=?)
+      WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE status='active' AND user_id=?)
       AND COALESCE((SELECT SUM(attendees) FROM bookings WHERE status='active' AND room_id=? AND starts_at<? AND ends_at>?),0)+? <= ?
       AND NOT ((SELECT role FROM users WHERE id=?)='student' AND (SELECT COALESCE(SUM(rating_delta),0) FROM bookings WHERE user_id=?)<0 AND ? IN (${POPULAR}))
-      ON CONFLICT(id) DO NOTHING`).bind(id,user.id,room.id,date,startTime,endTime,startsAt,endsAt,attendees,userName,purpose,now,endsAt,startsAt,user.id,room.id,endsAt,startsAt,attendees,room.capacity,user.id,user.id,room.id,now - 30 * DAY),
+      ON CONFLICT(id) DO NOTHING`).bind(id,user.id,room.id,date,startTime,endTime,startsAt,endsAt,attendees,userName,purpose,now,user.id,room.id,endsAt,startsAt,attendees,room.capacity,user.id,user.id,room.id,now - 30 * DAY),
     db.prepare('SELECT * FROM bookings WHERE id=? AND user_id=?').bind(id,user.id),
   ]);
   const row = results[2].results[0] as Row | undefined;

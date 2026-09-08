@@ -55,7 +55,8 @@ void test('shared schedule, ownership, adjacent reservations and idempotent writ
     await book(f.db,f.charlie,input({roomId:4}),NOW);
     await assert.rejects(book(f.db,f.dave,input({ roomId:4, attendees: 4 }),NOW),conflict);
     await assert.rejects(book(f.db,f.alice,input({roomId:4}),NOW),conflict);
-    await book(f.db,f.alice,input({roomId:4,startTime:510,endTime:540}),NOW);
+    await assert.rejects(book(f.db,f.alice,input({roomId:4,startTime:510,endTime:540}),NOW),conflict);
+    await book(f.db,f.dave,input({roomId:4,startTime:510,endTime:540}),NOW);
     const publicState = await snapshot(f.db,null,NOW);
     assert.equal(publicState.schedules.length,4);
     assert.equal(publicState.schedules.filter(slot => slot.attendees === 4).length,4);
@@ -99,12 +100,13 @@ void test('early cancellation does not spend allowance; late cancellation costs 
     await book(f.db,f.alice,input({roomId:2}),NOW);
   } finally { f.dispose(); }
 });
-void test('parallel late cancellations share one monthly allowance; exactly two hours is late', async () => {
+void test('late cancellations share one monthly allowance; exactly two hours is late', async () => {
   const f = fixture();
   try {
     const a = await book(f.db,f.alice,input(),NOW);
+    assert.equal((await cancel(f.db,f.alice,a.id,NOW)).outcome,'free_monthly');
     const b = await book(f.db,f.alice,input({startTime:540,endTime:570}),NOW);
-    await Promise.all([cancel(f.db,f.alice,a.id,NOW),cancel(f.db,f.alice,b.id,NOW)]);
+    assert.equal((await cancel(f.db,f.alice,b.id,NOW)).outcome,'penalty');
     const state = await snapshot(f.db,f.alice,NOW);
     assert.equal(state.profile.rating,-2);
     assert.equal(state.profile.freeCancellationsUsed,1);

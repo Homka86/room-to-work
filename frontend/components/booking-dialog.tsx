@@ -8,8 +8,8 @@ import {
   Check,
   Clock,
   DoorOpen,
-  Info,
   Trash2,
+  Users,
   X,
 } from 'lucide-react';
 import {
@@ -368,7 +368,7 @@ export function BookingDialog({
             </DialogTitle>
             <DialogDescription className="confirmation-description text-[#6c647e] dark:text-muted-foreground text-base">
               {lang === 'ru' ? 'Ждём вас в коворкинге ' : 'We look forward to seeing you at '}
-              <strong className="text-[#2a2d3c] dark:text-foreground">{room.number}</strong> (
+              <span className="font-normal text-[#2a2d3c] dark:text-foreground">{room.number}</span> (
               {room.floor} {t.floorWord})
             </DialogDescription>
 
@@ -416,22 +416,13 @@ export function BookingDialog({
               </div>
             </div>
 
-            <div className="confirmation-note text-left w-full">
-              <Info size={18} />
-              <span>
-                {lang === 'ru'
-                  ? 'Бронь закреплена за вами. Если планы изменятся, вы можете отменить её в любой момент в «Моих бронированиях».'
-                  : 'Reservation confirmed. If your plans change, you can cancel it anytime in "My Bookings".'}
-              </span>
-            </div>
-
             <button
               id="booking-success-close-button"
               type="button"
               className="choose-button mt-2 cursor-pointer"
               onClick={() => onOpenChange(false)}
             >
-              {lang === 'ru' ? 'Отлично, понятно' : 'Got it, thanks'}
+              {lang === 'ru' ? 'Хорошо' : 'Okay'}
               <Check size={18} />
             </button>
           </div>
@@ -470,6 +461,16 @@ export function BookingDialog({
                 </span>
                 <span className="font-semibold text-[#7560da]">
                   {formatTime(activeBooking.startTime)} — {formatTime(activeBooking.endTime)}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center pb-2 border-b border-[#e7e9f2] dark:border-border">
+                <span className="text-[#777c8e] flex items-center gap-1.5">
+                  <Users size={15} />
+                  {t.peopleCountLabel}
+                </span>
+                <span className="font-normal text-[#2a2d3c] dark:text-foreground">
+                  {activeBooking.attendees} / {activeBooking.roomCapacity}
                 </span>
               </div>
 
@@ -515,15 +516,15 @@ export function BookingDialog({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   id="booking-start-cancel-button"
                   type="button"
                   className="h-11 w-full rounded-lg border border-[#cf414d] text-[#cf414d] hover:bg-[#fdeef0] dark:hover:bg-[#32171c] font-medium text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   onClick={() => setConfirmCancel(true)}
                 >
-                  <Trash2 size={16} />
                   {t.cancelBooking}
+                  <Trash2 size={16} />
                 </button>
                 <button
                   id="booking-keep-active-button"
@@ -532,6 +533,7 @@ export function BookingDialog({
                   onClick={() => onOpenChange(false)}
                 >
                   {lang === 'ru' ? 'Оставить бронь активной' : 'Keep reservation'}
+                  <Check size={17} />
                 </button>
               </div>
             )}

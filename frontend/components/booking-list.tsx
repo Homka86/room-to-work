@@ -6,7 +6,6 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  DoorOpen,
   FileText,
   MapPin,
   Trash2,
@@ -83,9 +82,6 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
             {/* Header: Room Name + Code + Status Badge */}
             <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="w-8 h-8 rounded-lg bg-accent text-primary flex items-center justify-center shrink-0">
-                  <DoorOpen size={17} />
-                </span>
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-base text-foreground">
@@ -102,13 +98,7 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
               </div>
 
               {/* Status Pill */}
-              <div>
-                {item.status === 'active' && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    {t.active}
-                  </span>
-                )}
+              {item.status !== 'active' && <div>
                 {item.status === 'completed' && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
                     <CheckCircle2 size={13} />
@@ -121,7 +111,7 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
                     {t.cancelled}
                   </span>
                 )}
-              </div>
+              </div>}
             </div>
 
             {/* Info details grid matching photo 1 cards */}
@@ -142,7 +132,7 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
 
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Users size={14} className="text-primary shrink-0" />
-                <span>
+                <span className="font-medium text-foreground">
                   {item.attendees} / {item.roomCapacity} {t.seats}
                 </span>
               </div>
@@ -157,9 +147,9 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
             {item.purpose && (
               <div className="flex items-start gap-2 text-xs pt-1 border-t border-border/40 text-muted-foreground">
                 <FileText size={14} className="text-primary shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-medium text-foreground/80">{t.purpose}:</span>{' '}
-                  <span>{t.purposes[item.purpose] || item.purpose}</span>
+                <div className="text-foreground">
+                  <span className="font-medium">{t.purpose}:</span>{' '}
+                  <span className="font-medium">{t.purposes[item.purpose] || item.purpose}</span>
                 </div>
               </div>
             )}
@@ -205,8 +195,8 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
                       onClick={() => setConfirmId(item.id)}
                       className="rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
                     >
-                      <Trash2 size={13} className="mr-1.5" />
                       {t.cancelBooking}
+                      <Trash2 size={13} className="ml-1.5" />
                     </Button>
                     {onSelectRoom && (
                       <Button
@@ -215,8 +205,8 @@ export function BookingList({ bookings, lang, t, onSelectRoom }: BookingListProp
                         onClick={() => onSelectRoom(item.roomId)}
                         className="rounded-xl text-xs font-semibold cursor-pointer"
                       >
-                        <MapPin size={13} className="mr-1.5" />
                         {lang === 'ru' ? 'На схеме этажа' : 'Show on map'}
+                        <MapPin size={13} className="ml-1.5" />
                       </Button>
                     )}
                   </div>

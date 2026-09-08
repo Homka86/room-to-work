@@ -94,10 +94,10 @@ export function MyBookingsDialog({
                   <Award size={22} />
                 </span>
                 <div className="min-w-0">
-                  <div className="text-xs text-muted-foreground font-medium truncate">
+                  <div className="text-xs text-muted-foreground font-bold truncate">
                     {t.ratingLabel}
                   </div>
-                  <div className="text-base font-bold text-foreground flex items-baseline gap-1">
+                  <div className="text-base font-normal text-foreground flex items-baseline gap-1">
                     <span>{formatRating(profile.rating)}</span>
                     <span className="text-xs font-normal text-muted-foreground">
                       {lang === 'ru'

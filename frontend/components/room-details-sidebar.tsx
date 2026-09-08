@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Info, Trash2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Trash2 } from 'lucide-react';
 import { RoomPhotoGallery } from './room-photo-gallery';
 import { RoomAmenities } from './room-amenities';
 import {
@@ -119,24 +119,6 @@ export function RoomDetailsSidebar({
           </div>
         )}
 
-        {/* SPECIAL NOTICE: ANOTHER ROOM BOOKED BY ME */}
-        {isOtherRoomBooked && activeBooking && (
-          <div
-            id="other-room-booked-notice"
-            className="p-3 mb-4 rounded-xl border border-[#f5ccd2] dark:border-[#522934] bg-[#fdeef0] dark:bg-[#2b181e] text-xs text-[#8f323c] dark:text-[#f3a8b4] flex flex-col gap-1.5"
-          >
-            <div className="font-semibold flex items-center gap-1.5">
-              <Info size={14} />
-              {t.campusRuleNotice}
-            </div>
-            <div className="leading-relaxed">
-              {lang === 'ru'
-                ? `У вас уже забронирован коворкинг ${activeBooking.roomNumber} (${activeBooking.roomFloor} этаж). Чтобы забронировать это помещение, сначала отмените текущую бронь.`
-                : `You already have an active reservation for Coworking ${activeBooking.roomNumber} (Floor ${activeBooking.roomFloor}). Please cancel it first to reserve this workspace.`}
-            </div>
-          </div>
-        )}
-
         {/* AMENITIES */}
         <RoomAmenities
           capacity={room.capacity}
@@ -219,13 +201,17 @@ export function RoomDetailsSidebar({
         <button
           id="choose-coworking-button"
           type="button"
-          className="choose-button cursor-pointer"
+          className="choose-button cursor-pointer disabled:cursor-not-allowed"
           onClick={onOpenBookingDialog}
+          disabled={isOtherRoomBooked}
+          title={isOtherRoomBooked ? (lang === 'ru' ? 'Сначала отмените текущую бронь' : 'Cancel your current reservation first') : undefined}
         >
           {isThisRoomBooked
             ? t.manageThisBooking
+            : isOtherRoomBooked
+            ? lang === 'ru' ? 'Бронь уже есть' : 'Active booking exists'
             : t.chooseCoworking}
-          <ArrowRight size={18} />
+          {isOtherRoomBooked ? <CheckCircle2 size={18} /> : <ArrowRight size={18} />}
         </button>
       </div>
     </aside>

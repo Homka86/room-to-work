@@ -8,7 +8,6 @@ import { useUserBookings, evaluateBookingPermission } from '@/lib/bookings';
 import { StorageStatus } from '@/components/storage-status';
 import { useUserProfile } from '@/lib/account';
 import { HeaderTopBar } from '@/components/header-topbar';
-import { ActiveBookingBanner } from '@/components/active-booking-banner';
 import { ControlBar } from '@/components/control-bar';
 import { FloorPlanView } from '@/components/floor-plan-view';
 import { RoomDetailsSidebar } from '@/components/room-details-sidebar';
@@ -84,19 +83,6 @@ export default function Home() {
             <p>{t.subheading}</p>
           </div>
         </div>
-
-        {activeBooking && (
-          <ActiveBookingBanner
-            booking={activeBooking}
-            t={t}
-            lang={lang}
-            onShowOnMap={(bFloor, bRoomId) => {
-              changeFloor(bFloor);
-              selectRoom(bRoomId);
-            }}
-            onManage={() => setMyBookingsOpen(true)}
-          />
-        )}
 
         <ControlBar
           date={date}

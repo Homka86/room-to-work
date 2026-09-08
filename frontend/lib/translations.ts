@@ -128,7 +128,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       'При отрицательном рейтинге часть самых востребованных пространств может быть временно недоступна.',
     bookingRulesTitle: 'Правила бронирования',
     bookingRules:
-      'Брони одного аккаунта не могут пересекаться по времени. На разные часы можно забронировать несколько пространств. У каждого пространства на выбранный слот может быть только один ответственный.',
+      'У одного аккаунта может быть только одна активная бронь. Чтобы забронировать другое пространство, сначала отмените текущую бронь. У каждого пространства на выбранный слот может быть только один ответственный.',
     roleStudent: 'Ученик',
     roleTeacher: 'Преподаватель',
     onlyFree: 'Показывать только свободные',
@@ -255,7 +255,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       'With a negative rating, some of the most requested spaces may be temporarily unavailable.',
     bookingRulesTitle: 'Booking rules',
     bookingRules:
-      'Reservations for one account cannot overlap. You can book multiple spaces for different times. Each space can have one responsible person for a selected slot.',
+      'One account can have only one active reservation. Cancel the current reservation before booking another space. Each space can have one responsible person for a selected slot.',
     roleStudent: 'Student',
     roleTeacher: 'Teacher',
     onlyFree: 'Show available only',
