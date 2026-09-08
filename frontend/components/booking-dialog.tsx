@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -88,6 +88,7 @@ export function BookingDialog({
     bookingDate || getToday(),
     selectedTime ?? 840,
   );
+  const scheduleReady = Boolean(bookingDate) && !loading && !storageError && isScheduleLoaded(bookingDate);
 
   const [userName, setUserName] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -117,16 +118,17 @@ export function BookingDialog({
 
   // A time is unavailable only when the room has no remaining seats.
   const availableStartTimes = useMemo(() => {
+    if (!scheduleReady) return [];
     return TIME_OPTIONS.filter((st) => {
       if (st + 30 > 1320 || !isFutureStart(st)) return false;
       return intervalFitsCapacity(roomSchedule, st, st + 30, requestedPeople, roomCapacity);
     });
-  }, [roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
+  }, [scheduleReady, roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
 
   // Keep all possible end times available. If an end would exceed the booking
   // limits, the start time is corrected only as much as necessary.
   const availableEndTimes = useMemo(() => {
-    if (startTime === null) return [];
+    if (!scheduleReady || startTime === null) return [];
     return TIME_OPTIONS.filter((end) => {
       if (end < 510) return false;
       let adjustedStart = startTime;
@@ -134,7 +136,7 @@ export function BookingDialog({
       if (end - adjustedStart < 30) adjustedStart = end - 30;
       return adjustedStart >= 480 && isFutureStart(adjustedStart) && intervalFitsCapacity(roomSchedule, adjustedStart, end, requestedPeople, roomCapacity);
     });
-  }, [startTime, roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
+  }, [scheduleReady, startTime, roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
 
   // The lists keep times that can be reached by adjusting the other boundary
   // when necessary. These sets mark the choices that already form a valid
@@ -184,6 +186,23 @@ export function BookingDialog({
     }
     return starts.sort((a, b) => Math.abs(a - preferredStart) - Math.abs(b - preferredStart))[0] ?? null;
   }
+
+  // The schedule can refresh while the dialog is open, or the user can raise
+  // the participant count. Do not leave an unavailable value selected.
+  useEffect(() => {
+    if (!open || !scheduleReady) return;
+    if (startTime !== null && !availableStartTimes.includes(startTime)) {
+      setStartTime(null);
+      setEndTime(null);
+      return;
+    }
+    if (endTime !== null && !availableEndTimes.includes(endTime)) {
+      setEndTime(null);
+    }
+  }, [open, scheduleReady, startTime, endTime, availableStartTimes, availableEndTimes]);
+
+  const noStartTimes = scheduleReady && availableStartTimes.length === 0;
+  const noEndTimes = scheduleReady && startTime !== null && availableEndTimes.length === 0;
 
   const formatBookingDateOption = (dayStr: string): string => {
     const d = new Date(dayStr + 'T12:00:00');
@@ -747,6 +766,7 @@ export function BookingDialog({
                     onValueChange={(val) => {
                       if (val) handleStartTimeChange(val);
                     }}
+                    disabled={!scheduleReady || noStartTimes}
                   >
                     <SelectTrigger id="booking-start-time-select" className="w-full h-10 bg-card select-none cursor-pointer">
                       <SelectValue placeholder={t.selectTimePrompt}>
@@ -782,7 +802,7 @@ export function BookingDialog({
                     onValueChange={(val) => {
                       if (val) handleEndTimeChange(val);
                     }}
-                    disabled={startTime === null}
+                    disabled={!scheduleReady || startTime === null || noEndTimes}
                   >
                     <SelectTrigger id="booking-end-time-select" className="w-full h-10 bg-card select-none cursor-pointer">
                       <SelectValue placeholder={t.selectTimePrompt}>
@@ -814,6 +834,22 @@ export function BookingDialog({
               {!bookingDate ? (
                 <p id="booking-date-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1 select-none">
                   {lang === 'ru' ? 'Сначала выберите дату.' : 'Please select a date first.'}
+                </p>
+              ) : !scheduleReady ? (
+                <p id="booking-schedule-loading-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1 select-none">
+                  {lang === 'ru' ? 'Расписание загружается…' : 'Schedule is loading…'}
+                </p>
+              ) : noStartTimes ? (
+                <p id="booking-no-start-times-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1 select-none">
+                  {lang === 'ru'
+                    ? 'На эту дату нет свободного времени. Выберите другую дату или меньше участников.'
+                    : 'No time is available on this date. Choose another date or fewer participants.'}
+                </p>
+              ) : noEndTimes ? (
+                <p id="booking-no-end-times-hint" className="text-[11px] text-[#8e879f] -mt-1 px-1 select-none">
+                  {lang === 'ru'
+                    ? 'Для выбранного начала нет свободного времени. Выберите другое начало.'
+                    : 'No end time is available for this start time. Choose another start time.'}
                 </p>
               ) : startTime !== null && endTime !== null && endTime > startTime ? (
                 <div id="booking-duration-hint" className="text-xs text-[#7560da] font-medium flex items-center justify-between -mt-1 px-1 select-none">
