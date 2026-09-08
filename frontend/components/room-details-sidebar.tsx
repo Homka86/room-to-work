@@ -4,6 +4,7 @@ import { RoomAmenities } from './room-amenities';
 import {
   getToday,
   getSchedule,
+  getScheduleSegments,
   isScheduleLoaded,
   formatDate,
   formatTime,
@@ -47,6 +48,7 @@ export function RoomDetailsSidebar({
 }: RoomDetailsSidebarProps) {
   const availabilityDate = date || getToday();
   const schedule = getSchedule(room, availabilityDate);
+  const scheduleSegments = getScheduleSegments(schedule);
   const scheduleLoaded = isScheduleLoaded(availabilityDate);
 
   return (
@@ -87,7 +89,7 @@ export function RoomDetailsSidebar({
         </div>
 
         <div id="room-timeline-bar" className="timeline" style={!scheduleLoaded ? { background: "var(--muted)" } : undefined} aria-label="Занятость с 8 до 22 часов">
-          {schedule.map((booking, index) => (
+          {scheduleSegments.map((booking, index) => (
             (() => {
               const color = getBookingLoadColor(booking.attendees);
               return (

@@ -73,6 +73,24 @@ export function getOccupiedSeats(bookings: Booking[], start: number, end: number
     .filter((booking) => booking.start < end && booking.end > start)
     .reduce((total, booking) => total + (booking.attendees ?? 0), 0);
 }
+export type ScheduleSegment = { start: number; end: number; attendees: number };
+export function getScheduleSegments(bookings: Booking[]): ScheduleSegment[] {
+  const points = [...new Set(bookings.flatMap((booking) => [booking.start, booking.end]))].sort((a, b) => a - b);
+  const segments: ScheduleSegment[] = [];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const attendees = getOccupiedSeats(bookings, start, end);
+    if (!attendees || start === end) continue;
+    const previous = segments[segments.length - 1];
+    if (previous && previous.end === start && previous.attendees === attendees) {
+      previous.end = end;
+    } else {
+      segments.push({ start, end, attendees });
+    }
+  }
+  return segments;
+}
 export function formatTime(minutes: number) {
   return (
     String(Math.floor(minutes / 60)).padStart(2, '0') +
