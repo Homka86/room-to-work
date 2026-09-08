@@ -762,7 +762,7 @@ export function BookingDialog({
                           value={String(val)}
                           className={`select-none cursor-pointer ${
                             highlightedStartTimes.has(val)
-                              ? 'bg-[#f0ecff] text-[#6250c8] font-semibold focus:bg-[#e7e0ff]'
+                              ? 'text-[#6250c8] font-semibold'
                               : ''
                           }`}
                         >
@@ -798,7 +798,7 @@ export function BookingDialog({
                           value={String(val)}
                           className={`select-none cursor-pointer ${
                             highlightedEndTimes.has(val)
-                              ? 'bg-[#f0ecff] text-[#6250c8] font-semibold focus:bg-[#e7e0ff]'
+                              ? 'text-[#6250c8] font-semibold'
                               : ''
                           }`}
                         >
