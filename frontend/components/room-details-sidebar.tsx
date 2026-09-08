@@ -27,6 +27,16 @@ interface RoomDetailsSidebarProps {
   onCancelBooking: (bookingId: string) => void;
 }
 
+function getBookingLoadColor(attendees: number) {
+  if (attendees >= 8) {
+    return { background: '#df4f5c', borderColor: '#c83d4b', dot: '#c83d4b' };
+  }
+  if (attendees >= 6) {
+    return { background: '#ef9a54', borderColor: '#dc813d', dot: '#dc813d' };
+  }
+  return { background: '#f3d35f', borderColor: '#dbb83d', dot: '#c69f24' };
+}
+
 export function RoomDetailsSidebar({
   room,
   state: _state,
@@ -143,21 +153,28 @@ export function RoomDetailsSidebar({
 
         <div id="room-timeline-bar" className="timeline" style={!scheduleLoaded ? { background: "var(--muted)" } : undefined} aria-label="Занятость с 8 до 22 часов">
           {schedule.map((booking, index) => (
-            <span
-              key={index}
-              className="timeline-booking"
-              style={{
-                left: ((booking.start - 480) / 840) * 100 + '%',
-                width: ((booking.end - booking.start) / 840) * 100 + '%',
-              }}
-              title={
-                `${t.busy} ` +
-                formatTime(booking.start) +
-                '–' +
-                formatTime(booking.end) +
-                ` · ${booking.attendees}/${room.capacity}`
-              }
-            />
+            (() => {
+              const color = getBookingLoadColor(booking.attendees);
+              return (
+                <span
+                  key={index}
+                  className="timeline-booking"
+                  style={{
+                    left: ((booking.start - 480) / 840) * 100 + '%',
+                    width: ((booking.end - booking.start) / 840) * 100 + '%',
+                    background: color.background,
+                    borderColor: color.borderColor,
+                  }}
+                  title={
+                    `${t.busy} ` +
+                    formatTime(booking.start) +
+                    '–' +
+                    formatTime(booking.end) +
+                    ` · ${booking.attendees}/${room.capacity}`
+                  }
+                />
+              );
+            })()
           ))}
           {time !== null && (
             <span
@@ -180,7 +197,7 @@ export function RoomDetailsSidebar({
             .map((booking, index) => (
               <div key={index}>
                 <span>
-                  <span className="schedule-dot" />
+                  <span className="schedule-dot" style={{ background: getBookingLoadColor(booking.attendees).dot }} />
                   {formatTime(booking.start)} — {formatTime(booking.end)}
                 </span>
                 <span>
