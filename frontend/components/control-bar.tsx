@@ -125,6 +125,7 @@ export function ControlBar({
         >
           <SelectTrigger
             id="control-date-select"
+            showIndicator={false}
             className="group flex min-h-[44px] h-auto w-full items-center gap-2.5 rounded-xl border border-border/60 sm:border-0 bg-muted/30 sm:bg-transparent px-3 py-2 text-left shadow-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40 cursor-pointer select-none active:bg-muted/70"
             aria-label={t.when}
           >
@@ -161,6 +162,7 @@ export function ControlBar({
         >
           <SelectTrigger
             id="control-time-select"
+            showIndicator={false}
             className="group flex min-h-[44px] h-auto w-full items-center gap-2.5 rounded-xl border border-border/60 sm:border-0 bg-muted/30 sm:bg-transparent px-3 py-2 text-left shadow-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40 cursor-pointer select-none active:bg-muted/70"
             aria-label={t.time}
           >
