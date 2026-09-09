@@ -7,6 +7,7 @@ import { useCampusPreferences } from '@/hooks/use-campus-preferences';
 export function RatingSummary({ compact = false }: { compact?: boolean }) {
   const { profile } = useUserProfile();
   const { t, lang } = useCampusPreferences();
+  if (profile.role === 'teacher') return null;
   return (
     <div
       className={`rating-summary${compact ? ' rating-summary-compact' : ''}`}

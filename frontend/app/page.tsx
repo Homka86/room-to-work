@@ -71,7 +71,7 @@ export default function Home() {
       />
 
       <main id="workspace-main" className="workspace pb-24 md:pb-0">
-        <StorageStatus />
+        <StorageStatus lang={lang} t={t} />
         <div id="page-heading-block" className="page-heading">
           <div>
             <h1>{t.heading}</h1>

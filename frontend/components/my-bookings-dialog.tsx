@@ -59,7 +59,11 @@ export function MyBookingsDialog({
             <DialogTitle>{t.user}</DialogTitle>
             <DialogDescription>
               {lang === 'ru'
-                ? 'Профиль пользователя, роль, рейтинг и история бронирований'
+                ? profile.role === 'teacher'
+                  ? 'Профиль преподавателя, роль и история бронирований'
+                  : 'Профиль пользователя, роль, рейтинг и история бронирований'
+                : profile.role === 'teacher'
+                ? 'Teacher profile, role, and reservation history'
                 : 'User profile, role, rating, and reservation history'}
             </DialogDescription>
           </div>
@@ -67,7 +71,7 @@ export function MyBookingsDialog({
 
         {/* User Role & Rating in 1 row */}
         <div className="additional-info-sections">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className={`grid ${profile.role === 'teacher' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3.5`}>
             {/* Role Card: icon, role label, and role toggle */}
             <div className="p-3.5 sm:p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -88,42 +92,44 @@ export function MyBookingsDialog({
             </div>
 
             {/* Rating Card: icon, rating label and value + free cancellations */}
-            <div className="p-3.5 sm:p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="w-11 h-11 rounded-2xl bg-accent text-primary flex items-center justify-center shrink-0">
-                  <Award size={22} />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-sm font-bold text-foreground truncate">
-                    {t.ratingLabel}
-                  </div>
-                  <div className="text-sm font-normal font-sans leading-normal tracking-normal text-foreground flex items-baseline gap-1">
-                    <span className="font-normal font-sans">{formatRating(profile.rating)}</span>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {lang === 'ru'
-                        ? profile.rating === 1
-                          ? 'балл'
-                          : 'баллов'
-                        : profile.rating === 1
-                        ? 'point'
-                        : 'points'}
-                    </span>
+            {profile.role !== 'teacher' && (
+              <div className="p-3.5 sm:p-4 rounded-2xl border border-border bg-card shadow-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-11 h-11 rounded-2xl bg-accent text-primary flex items-center justify-center shrink-0">
+                    <Award size={22} />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-foreground truncate">
+                      {t.ratingLabel}
+                    </div>
+                    <div className="text-sm font-normal font-sans leading-normal tracking-normal text-foreground flex items-baseline gap-1">
+                      <span className="font-normal font-sans">{formatRating(profile.rating)}</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {lang === 'ru'
+                          ? profile.rating === 1
+                            ? 'балл'
+                            : 'баллов'
+                          : profile.rating === 1
+                          ? 'point'
+                          : 'points'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Free cancellations count */}
-              <div className="text-right shrink-0 pl-2 border-l border-border/70">
-                <div className="text-[11px] text-muted-foreground font-medium whitespace-nowrap leading-tight">
-                  {lang === 'ru' ? 'Бесплатные отмены' : 'Free cancellations'}
-                </div>
-                <div className="text-xs font-semibold text-foreground mt-0.5 whitespace-nowrap">
-                  {lang === 'ru'
-                    ? `${freeCancellationsLeft} в этом месяце`
-                    : `${freeCancellationsLeft} this month`}
+                {/* Free cancellations count */}
+                <div className="text-right shrink-0 pl-2 border-l border-border/70">
+                  <div className="text-[11px] text-muted-foreground font-medium whitespace-nowrap leading-tight">
+                    {lang === 'ru' ? 'Бесплатные отмены' : 'Free cancellations'}
+                  </div>
+                  <div className="text-xs font-semibold text-foreground mt-0.5 whitespace-nowrap">
+                    {lang === 'ru'
+                      ? `${freeCancellationsLeft} в этом месяце`
+                      : `${freeCancellationsLeft} this month`}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

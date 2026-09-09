@@ -107,6 +107,10 @@ export interface Translation {
     canTalk: string;
     screen: string;
   };
+  syncError: string;
+  syncErrorRetry: string;
+  syncErrorRetrying: string;
+  syncLoading: string;
 }
 
 export const TRANSLATIONS: Record<Language, Translation> = {
@@ -236,6 +240,10 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       canTalk: 'Можно общаться',
       screen: 'Экран',
     },
+    syncError: 'Не удалось обновить данные. Показана последняя сохранённая версия.',
+    syncErrorRetry: 'Повторить',
+    syncErrorRetrying: 'Пробуем…',
+    syncLoading: 'Загрузка бронирований…',
   },
   en: {
     brand: 'room to work',
@@ -363,5 +371,9 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       canTalk: 'Discussion friendly',
       screen: 'Display screen',
     },
+    syncError: 'Failed to update data. Showing the latest saved version.',
+    syncErrorRetry: 'Retry',
+    syncErrorRetrying: 'Retrying…',
+    syncLoading: 'Loading reservations…',
   },
 } as const;
