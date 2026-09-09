@@ -11,6 +11,7 @@ import { HeaderTopBar } from '@/components/header-topbar';
 import { ControlBar } from '@/components/control-bar';
 import { FloorPlanView } from '@/components/floor-plan-view';
 import { RoomDetailsSidebar } from '@/components/room-details-sidebar';
+import { MobileBottomBar } from '@/components/mobile-bottom-bar';
 import { Footer } from '@/components/footer';
 import { BookingDialog } from '@/components/booking-dialog';
 import { MyBookingsDialog } from '@/components/my-bookings-dialog';
@@ -40,12 +41,13 @@ export default function Home() {
 
   function selectRoom(id: number) {
     setSelectedId(id);
-    if (window.matchMedia('(max-width: 970px)').matches) {
-      document.getElementById('room-details')?.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-        block: 'start',
-      });
-    }
+  }
+
+  function scrollToRoomDetails() {
+    document.getElementById('room-details')?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      block: 'start',
+    });
   }
 
   function changeFloor(next: number) {
@@ -68,7 +70,7 @@ export default function Home() {
         onOpenAdditionalInfo={() => setAdditionalInfoOpen(true)}
       />
 
-      <main id="workspace-main" className="workspace">
+      <main id="workspace-main" className="workspace pb-24 md:pb-0">
         <StorageStatus />
         <div id="page-heading-block" className="page-heading">
           <div>
@@ -77,28 +79,31 @@ export default function Home() {
           </div>
         </div>
 
-        <ControlBar
-          date={date}
-          time={time}
-          t={t}
-          lang={lang}
-          onDateChange={setDate}
-          onTimeChange={setTime}
-        />
-
         <div className="main-grid">
-          <FloorPlanView
-            floor={floor}
-            rooms={ROOMS}
-            selectedId={selectedId}
-            date={date}
-            time={time}
-            activeBookingRoomId={activeBooking?.roomId}
-            t={t}
-            lang={lang}
-            onFloorChange={changeFloor}
-            onSelectRoom={selectRoom}
-          />
+          <div className="floor-section flex flex-col gap-4">
+            <ControlBar
+              date={date}
+              time={time}
+              t={t}
+              lang={lang}
+              floor={floor}
+              rooms={ROOMS}
+              onDateChange={setDate}
+              onTimeChange={setTime}
+              onFloorChange={changeFloor}
+            />
+            <FloorPlanView
+              floor={floor}
+              rooms={ROOMS}
+              selectedId={selectedId}
+              date={date}
+              time={time}
+              activeBookingRoomId={activeBooking?.roomId}
+              t={t}
+              lang={lang}
+              onSelectRoom={selectRoom}
+            />
+          </div>
           <RoomDetailsSidebar
             room={selected}
             state={state}
@@ -114,6 +119,17 @@ export default function Home() {
 
         <Footer t={t} />
       </main>
+
+      <MobileBottomBar
+        room={selected}
+        availability={state}
+        isThisRoomBooked={isThisRoomBooked}
+        isOtherRoomBooked={isOtherRoomBooked}
+        lang={lang}
+        t={t}
+        onOpenBookingDialog={() => setBookingDialogOpen(true)}
+        onViewDetails={scrollToRoomDetails}
+      />
 
       <BookingDialog
         key={`${selected.id}-${date}-${time ?? 'none'}-${bookingDialogOpen ? 'open' : 'closed'}`}

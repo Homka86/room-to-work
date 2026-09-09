@@ -32,27 +32,27 @@ export function HeaderTopBar({
 
   return (
     <header id="site-topbar" className="topbar">
-      <Link id="brand-logo-link" href="/" className="brand" aria-label={t.brand}>
-        <span className="brand-icon">
+      <Link id="brand-logo-link" href="/" className="brand shrink-0" aria-label={t.brand}>
+        <span className="brand-icon shrink-0">
           <DoorOpen size={24} strokeWidth={2.4} />
         </span>
-        <span>{t.brand}</span>
+        <span className="whitespace-nowrap pr-2 font-bold select-none inline-block">{t.brand}</span>
       </Link>
 
-      <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+      <div className="ml-auto flex items-center gap-2 sm:gap-2 shrink-0">
         {/* 1. Theme switch button */}
         <button
           id="header-theme-toggle"
           type="button"
           onClick={onToggleTheme}
-          className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
+          className="inline-flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs active:scale-95 touch-manipulation focus-visible:outline-2 focus-visible:outline-primary"
           title={theme === 'dark' ? t.lightTheme : t.darkTheme}
           aria-label={t.themeSwitch}
         >
           {theme === 'dark' ? (
-            <Sun size={17} className="text-amber-400" />
+            <Sun size={18} className="text-amber-400" />
           ) : (
-            <Moon size={17} className="text-primary" />
+            <Moon size={18} className="text-primary" />
           )}
         </button>
 
@@ -61,11 +61,11 @@ export function HeaderTopBar({
           id="header-language-toggle"
           type="button"
           onClick={onToggleLanguage}
-          className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
+          className="relative inline-flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs active:scale-95 touch-manipulation focus-visible:outline-2 focus-visible:outline-primary"
           title={`${t.languageSwitch} (${lang.toUpperCase()})`}
           aria-label={`${t.languageSwitch}: ${lang.toUpperCase()}`}
         >
-          <Globe size={17} />
+          <Globe size={18} />
           <span className="sr-only">{lang.toUpperCase()}</span>
           <span className="absolute -bottom-1 -right-1 text-[9px] font-extrabold uppercase px-1 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 leading-none">
             {lang}
@@ -77,11 +77,11 @@ export function HeaderTopBar({
           id="header-additional-info-button"
           type="button"
           onClick={onOpenAdditionalInfo}
-          className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
+          className="inline-flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs active:scale-95 touch-manipulation focus-visible:outline-2 focus-visible:outline-primary"
           title={t.additionalInfo}
           aria-label={t.additionalInfo}
         >
-          <Info size={17} />
+          <Info size={18} />
         </button>
 
         {/* 4. User profile & bookings button */}
@@ -89,7 +89,7 @@ export function HeaderTopBar({
           id="header-user-button"
           type="button"
           onClick={handleOpenUser}
-          className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-primary"
+          className="relative inline-flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl border border-border bg-card text-foreground hover:bg-muted hover:text-primary transition-all cursor-pointer shadow-xs active:scale-95 touch-manipulation focus-visible:outline-2 focus-visible:outline-primary"
           title={
             activeBooking
               ? `${t.user} (${getRoomCode(activeBooking.roomNumber, lang)})`
@@ -97,7 +97,7 @@ export function HeaderTopBar({
           }
           aria-label={t.user}
         >
-          <UserRound size={17} />
+          <UserRound size={18} />
           {activeBooking ? (
             <span
               id="header-active-booking-pill"

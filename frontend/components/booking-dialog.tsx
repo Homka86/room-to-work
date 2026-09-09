@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -113,8 +113,11 @@ export function BookingDialog({
       ? 'Нельзя превысить вместимость: на это время свободных мест недостаточно. Выберите другое время или меньше участников.'
       : 'Capacity limit exceeded: there are not enough free seats at this time. Choose another time or fewer people.';
 
-  const isFutureStart = (value: number) =>
-    Date.parse(`${bookingDate}T${formatTime(value)}:00+05:00`) > serverTime;
+  const isFutureStart = useCallback(
+    (value: number) =>
+      Date.parse(`${bookingDate}T${formatTime(value)}:00+05:00`) > serverTime,
+    [bookingDate, serverTime],
+  );
 
   // A time is unavailable only when the room has no remaining seats.
   const availableStartTimes = useMemo(() => {
@@ -123,7 +126,7 @@ export function BookingDialog({
       if (st + 30 > 1320 || !isFutureStart(st)) return false;
       return intervalFitsCapacity(roomSchedule, st, st + 30, requestedPeople, roomCapacity);
     });
-  }, [scheduleReady, roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
+  }, [scheduleReady, isFutureStart, roomSchedule, requestedPeople, roomCapacity]);
 
   // Keep all possible end times available. If an end would exceed the booking
   // limits, the start time is corrected only as much as necessary.
@@ -136,7 +139,7 @@ export function BookingDialog({
       if (end - adjustedStart < 30) adjustedStart = end - 30;
       return adjustedStart >= 480 && isFutureStart(adjustedStart) && intervalFitsCapacity(roomSchedule, adjustedStart, end, requestedPeople, roomCapacity);
     });
-  }, [scheduleReady, startTime, roomSchedule, bookingDate, serverTime, requestedPeople, roomCapacity]);
+  }, [scheduleReady, startTime, isFutureStart, roomSchedule, requestedPeople, roomCapacity]);
 
   // The lists keep times that can be reached by adjusting the other boundary
   // when necessary. These sets mark the choices that already form a valid
@@ -192,12 +195,14 @@ export function BookingDialog({
   useEffect(() => {
     if (!open || !scheduleReady) return;
     if (startTime !== null && !availableStartTimes.includes(startTime)) {
-      setStartTime(null);
-      setEndTime(null);
+      queueMicrotask(() => {
+        setStartTime(null);
+        setEndTime(null);
+      });
       return;
     }
     if (endTime !== null && !availableEndTimes.includes(endTime)) {
-      setEndTime(null);
+      queueMicrotask(() => setEndTime(null));
     }
   }, [open, scheduleReady, startTime, endTime, availableStartTimes, availableEndTimes]);
 
@@ -444,7 +449,7 @@ export function BookingDialog({
       }}
     >
       <DialogContent
-        className="confirmation-dialog w-[95vw] sm:max-w-[540px] p-6 sm:p-7 overflow-y-auto overflow-x-hidden max-h-[90vh]"
+        className="confirmation-dialog w-[96vw] sm:max-w-[540px] p-4 sm:p-7 overflow-y-auto overflow-x-hidden max-h-[92vh] max-h-[92dvh] touch-manipulation"
         showCloseButton={false}
       >
         {/* Success View */}
@@ -768,7 +773,7 @@ export function BookingDialog({
                     }}
                     disabled={!scheduleReady || noStartTimes}
                   >
-                    <SelectTrigger id="booking-start-time-select" className="w-full h-10 bg-card select-none cursor-pointer">
+                    <SelectTrigger id="booking-start-time-select" className="w-full h-11 sm:h-10 bg-card select-none cursor-pointer">
                       <SelectValue placeholder={t.selectTimePrompt}>
                         <span className={`select-none ${startTime !== null ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                           {startTime !== null ? formatTime(startTime) : t.selectTimePrompt}
@@ -804,7 +809,7 @@ export function BookingDialog({
                     }}
                     disabled={!scheduleReady || startTime === null || noEndTimes}
                   >
-                    <SelectTrigger id="booking-end-time-select" className="w-full h-10 bg-card select-none cursor-pointer">
+                    <SelectTrigger id="booking-end-time-select" className="w-full h-11 sm:h-10 bg-card select-none cursor-pointer">
                       <SelectValue placeholder={t.selectTimePrompt}>
                         <span className={`select-none ${endTime !== null ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                           {endTime !== null ? formatTime(endTime) : t.selectTimePrompt}
@@ -908,7 +913,7 @@ export function BookingDialog({
                   }
                 }}
               >
-                <SelectTrigger id="booking-people-count-select" className="w-full h-10 bg-card select-none cursor-pointer">
+                <SelectTrigger id="booking-people-count-select" className="w-full h-11 sm:h-10 bg-card select-none cursor-pointer">
                   <SelectValue placeholder={lang === 'ru' ? 'Выберите количество' : 'Select count'}>
                     <span className={`select-none ${peopleCount !== null ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                       {peopleCount !== null
@@ -967,7 +972,7 @@ export function BookingDialog({
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
                 required
-                className="h-10"
+                className="h-11 sm:h-10 text-sm"
               />
             </div>
 
@@ -982,7 +987,7 @@ export function BookingDialog({
                   if (val) setPurpose(val);
                 }}
               >
-                <SelectTrigger id="booking-purpose-select" className="w-full h-10 bg-card mb-2">
+                <SelectTrigger id="booking-purpose-select" className="w-full h-11 sm:h-10 bg-card mb-2">
                   <SelectValue placeholder={lang === 'ru' ? 'Выберите цель посещения' : 'Select purpose'}>
                     {purpose || (lang === 'ru' ? 'Выберите цель посещения' : 'Select purpose')}
                   </SelectValue>
@@ -1002,7 +1007,7 @@ export function BookingDialog({
               <button
                 id="booking-cancel-modal-button"
                 type="button"
-                className="choose-button cursor-pointer flex items-center justify-center gap-2 w-full"
+                className="choose-button min-h-[44px] cursor-pointer flex items-center justify-center gap-2 w-full touch-manipulation"
                 onClick={() => onOpenChange(false)}
               >
                 {t.close} <X size={17} />
@@ -1010,7 +1015,7 @@ export function BookingDialog({
               <button
                 id="booking-submit-button"
                 type="submit"
-                className="choose-button cursor-pointer flex items-center justify-center gap-2 w-full"
+                className="choose-button min-h-[44px] cursor-pointer flex items-center justify-center gap-2 w-full touch-manipulation"
                 disabled={
                   pending || loading || Boolean(storageError) || !isScheduleLoaded(bookingDate) ||
                   !userName.trim() ||
